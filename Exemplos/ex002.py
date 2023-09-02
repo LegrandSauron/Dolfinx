@@ -1,6 +1,6 @@
 # Scaled variable
 
-carregamento= 50000
+carregamento= 500
 E = 78e6
 poisson = 0.3
 lambda_ = E*poisson / ((1+poisson)*(1-2*poisson))
@@ -16,7 +16,7 @@ from dolfinx import mesh, fem, plot, io
 
 from petsc4py import PETSc
 #Importação da geometria e das condições de contorno.
-domain, cell_tags, facet_tags = gmshio.read_from_msh("t11_m.msh", MPI.COMM_SELF,0, gdim=3)
+domain, cell_tags, facet_tags = gmshio.read_from_msh("malha_estruturada.msh", MPI.COMM_SELF,0, gdim=2)
 
 
 V = fem.VectorFunctionSpace(domain, ("CG", 1))
@@ -24,8 +24,14 @@ V = fem.VectorFunctionSpace(domain, ("CG", 1))
 #condições de contorno
 #fdim = domain.topology.dim - 1
 u_bc = np.array((0,) * domain.geometry.dim, dtype=PETSc.ScalarType)
-dofs_2 = fem.locate_dofs_topological(V, facet_tags.dim, facet_tags.find(101))
-bc=fem.dirichletbc(u_bc,dofs=dofs_2,V=V)
+dofs_2 = fem.locate_dofs_topological(V, facet_tags.dim, facet_tags.find(10))
+bc_1=fem.dirichletbc(u_bc,dofs=dofs_2,V=V)
+
+u_bc = np.array((0,) * domain.geometry.dim, dtype=PETSc.ScalarType)
+dofs_2 = fem.locate_dofs_topological(V, facet_tags.dim, facet_tags.find(12))
+bc_2=fem.dirichletbc(u_bc,dofs=dofs_2,V=V)
+
+bcs= [bc_1,bc_2]
 
 
 #especificar a medida de integração, que deve ser a integral sobre a fronteira do nosso domínio
@@ -50,10 +56,10 @@ f = fem.Constant(domain, ScalarType((0,carregamento )))
 
 #Formulação variacional 
 a = ufl.inner(sigma(u), ufl.grad(v)) * ufl.dx
-L = ufl.dot(f, v) * ufl.ds
+L = ufl.dot(f, v) * ds(9)
 
 
-problem = fem.petsc.LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+problem = fem.petsc.LinearProblem(a, L, bcs=bcs, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
 uh = problem.solve()
 
 

@@ -7,7 +7,7 @@ import numpy as np
 from petsc4py import PETSc
 
 # Scaled variable
-carregamento= 50
+carregamento= 500
 E = 78e6
 poisson = 0.3
 lambda_ = E*poisson / ((1+poisson)*(1-2*poisson))

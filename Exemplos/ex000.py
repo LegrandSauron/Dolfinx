@@ -70,4 +70,4 @@ with XDMFFile(domain.comm, "malha001.xdmf", "w") as xdmf:
 
 if __name__ == "__main__":
     pass
-
+print(problem)

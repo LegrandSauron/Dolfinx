@@ -12,10 +12,11 @@ import ufl
 from mpi4py import MPI
 from petsc4py.PETSc import ScalarType
 from dolfinx.io import gmshio
-from dolfinx import mesh, fem, plot, io, log
+from dolfinx import mesh, fem, plot, io, log, cpp, nls
+
 
 #Importação da geometria e das condições de contorno.
-domain, cell_tags, facet_tags = gmshio.read_from_msh("malha_150_60_acopla.msh", MPI.COMM_SELF,0, gdim=2)
+domain, cell_tags, facet_tags = gmshio.read_from_msh("malha_semi_pronta.msh", MPI.COMM_SELF,0, gdim=2)
 #malah, cell_tags, facet_tags = gmshio.read_from_msh("malha_001.msh", MPI.COMM_SELF,0, gdim=2)
 
 
@@ -50,11 +51,13 @@ f = fem.Constant(domain, ScalarType((0,carregamento )))
 a = ufl.inner(sigma(u), ufl.grad(v)) * ufl.dx
 L = ufl.dot(f, v) * ds
 
-problem = fem.petsc.LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
-log.set_log_level(log.LogLevel.INFO)
+problem = fem.petsc.LinearProblem(a, L, bcs=[bc]) #, petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
+#solver = nls.petsc.NewtonSolver(domain.comm, problem)
+
 
 problem.report = True
 uh = problem.solve()
+#n, converged = solver.solve(u)
 
 
 from dolfinx.io import XDMFFile
@@ -63,5 +66,6 @@ with XDMFFile(domain.comm, "malha001.xdmf", "w") as xdmf:
     xdmf.write_meshtags(facet_tags)
     xdmf.write_meshtags(cell_tags)
     xdmf.write_function(uh)
+
 
 

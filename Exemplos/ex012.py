@@ -122,7 +122,7 @@ A = fem.petsc.assemble_matrix(F_bilinear, bcs=[bc])
 #A.assemble()
 
 #b = fem.petsc.assemble_vector(L)
-from scripts.solver_manual import*
+from referencias.solver_manual import*
 
 print(T_hencky)
 

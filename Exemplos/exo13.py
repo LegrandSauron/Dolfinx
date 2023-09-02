@@ -72,7 +72,6 @@ problem = fem.petsc.NonlinearProblem(F_bilinear,uh,[bc],jacobian)
 solver = nls.petsc.NewtonSolver(domain.comm, problem)
 
 solver.convergence_criterion = "residual"
-
 solver.max_it = 51
 solver.report = True
 
@@ -86,6 +85,8 @@ solver.line_search = True
 #solver.jacobian_update = "approximate"
 solver.error_on_nonconvergence = True
 
+
+#visualização da convergencia e interações
 log.set_log_level(log.LogLevel.INFO)
 n, converged = solver.solve(uh)
 assert(converged)

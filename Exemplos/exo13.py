@@ -59,19 +59,35 @@ T_tension= (1/J)*(2.0 * G * T_hencky + lambda_ * ufl.tr(T_hencky) * I )
 f = fem.Constant(domain,ScalarType((0,carregamento)))
 
 
-
 ds = ufl.Measure('ds', domain=domain)
 dx = ufl.Measure("dx", domain=domain)
 
 #Weak form for  Div T = 0,  Tn= f, u= 0 in 
 F_bilinear = ufl.inner(ufl.grad(v),T_tension) * dx - ufl.inner(f, v)*ds
+
 jacobian= ufl.derivative(F_bilinear,uh ,u)
 
+#solver 
 problem = fem.petsc.NonlinearProblem(F_bilinear,uh,[bc],jacobian)
 solver = nls.petsc.NewtonSolver(domain.comm, problem)
 
-log.set_log_level(log.LogLevel.TRACE)
+solver.convergence_criterion = "residual"
 
+solver.max_it = 51
+solver.report = True
+
+solver.atol = 1e-12
+solver.solver_type = "gmres"
+solver.preconditioner_type = "lu"
+solver.initial_guess = None  # Pode ser um vetor ou None
+# solver.divergence_tolerance = 1e-4
+solver.monitor = None  # Pode ser uma função de monitoramento personalizada
+solver.line_search = True
+#solver.jacobian_update = "approximate"
+solver.error_on_nonconvergence = True
+
+log.set_log_level(log.LogLevel.INFO)
 n, converged = solver.solve(uh)
-
+assert(converged)
+print(f"Number of interations: {n:d}")
 

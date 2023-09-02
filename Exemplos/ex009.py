@@ -40,7 +40,6 @@ uh = ufl.TrialFunction(V)
 d = len(u)
 I = (ufl.Identity(d)) 
 F =(I + ufl.grad(u)) 
-
 #tensor de cauchy-Green left 
 C= (F * F.T )
 

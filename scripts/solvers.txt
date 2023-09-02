@@ -1,0 +1,52 @@
+
+###############Algumas explicações a respeito do modelo de solucão: ####################################
+
+Certamente! Aqui está um resumo de cada um dos comandos de configuração que discutimos para o solver `NewtonSolver`:
+
+1. **`convergence_criterion`**: Define o critério de convergência para o solver. Pode ser "incremental" (baseado na mudança no incremento da solução) ou "residual" (baseado no resíduo).
+
+2. **`rtol`**: Define a tolerância relativa para a convergência. O solver considera a convergência alcançada quando a mudança no incremento da solução é menor que esse valor multiplicado pela norma da solução.
+
+3. **`max_it`**: Especifica o número máximo de iterações que o solver tentará realizar para resolver o problema.
+
+4. **`report`**: Ativa ou desativa a impressão de informações sobre o progresso do solver durante as iterações.
+
+5. **`atol`**: Define a tolerância absoluta para a convergência. O solver considera a convergência alcançada quando a mudança no incremento da solução é menor que esse valor.
+
+6. **`solver_type`**: Especifica o tipo de solucionador linear a ser usado dentro do solver não linear, como "bicgstab", "gmres", etc.
+
+7. **`preconditioner_type`**: Escolhe o tipo de pré-condicionador para acelerar a solução do sistema linear interno, como "none", "jacobi", "ilu", etc.
+
+8. **`initial_guess`**: Define uma estimativa inicial para a solução. Pode ser um vetor ou `None`.
+
+9. **`divergence_tolerance`**: Define um critério de divergência. Se a solução divergir além dessa tolerância, a iteração é considerada divergente.
+
+10. **`monitor`**: Permite fornecer uma função de monitoramento personalizada para acompanhar o progresso do solver e a convergência.
+
+11. **`line_search`**: Habilita ou desabilita a busca de linha para melhorar a convergência.
+
+12. **`jacobian_update`**: Define como a matriz jacobiana é atualizada durante as iterações. Pode ser "exact" ou "approximate".
+
+13. **`error_on_nonconvergence`**: Determina se o solver deve gerar um erro se a convergência não for alcançada.
+
+Certifique-se de consultar a documentação da biblioteca ou framework que você está utilizando para obter informações detalhadas sobre essas opções e suas possíveis configurações. Isso ajudará você a usar o solver `NewtonSolver` com eficácia para resolver seus problemas de elementos finitos ou álgebra linear.
+
+problem = fem.petsc.NonlinearProblem(F=F_bilinear ,u=u,bcs=[bc])
+solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
+
+solver.convergence_criterion = "incremental"
+solver.rtol = 1e-12
+solver.max_it = 10000
+solver.report = True
+
+solver.atol = 1e-12
+solver.solver_type = "gmres"
+solver.preconditioner_type = "lu"
+solver.initial_guess = None  # Pode ser um vetor ou None
+solver.divergence_tolerance = 1e12
+solver.monitor = None  # Pode ser uma função de monitoramento personalizada
+solver.line_search = True
+solver.jacobian_update = "approximate"
+solver.error_on_nonconvergence = True
+
+#################################

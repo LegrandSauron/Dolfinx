@@ -1,0 +1,1 @@
+from .operacoes_02 import Hencky_Strain

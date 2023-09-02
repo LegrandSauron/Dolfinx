@@ -1,0 +1,15 @@
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+3
+1 7 "carregamento"
+1 8 "engaste"
+2 9 "dominio"
+$EndPhysicalNames
+$Nodes
+0
+$EndNodes
+$Elements
+0
+$EndElements

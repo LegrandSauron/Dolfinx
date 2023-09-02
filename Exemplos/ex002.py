@@ -14,17 +14,18 @@ from petsc4py.PETSc import ScalarType
 from dolfinx.io import gmshio
 from dolfinx import mesh, fem, plot, io
 
+from petsc4py import PETSc
 #Importação da geometria e das condições de contorno.
-domain, cell_tags, facet_tags = gmshio.read_from_msh("transfinite_exemplo.msh", MPI.COMM_SELF,0, gdim=3)
+domain, cell_tags, facet_tags = gmshio.read_from_msh("t11_m.msh", MPI.COMM_SELF,0, gdim=3)
 
 
 V = fem.VectorFunctionSpace(domain, ("CG", 1))
 
 #condições de contorno
 #fdim = domain.topology.dim - 1
-u_D = np.array([0,0,0], dtype=ScalarType) 
-dofs_2 = fem.locate_dofs_topological(V, facet_tags.dim, facet_tags.find(100))
-bc=fem.dirichletbc(u_D,dofs=dofs_2,V=V)
+u_bc = np.array((0,) * domain.geometry.dim, dtype=PETSc.ScalarType)
+dofs_2 = fem.locate_dofs_topological(V, facet_tags.dim, facet_tags.find(101))
+bc=fem.dirichletbc(u_bc,dofs=dofs_2,V=V)
 
 
 #especificar a medida de integração, que deve ser a integral sobre a fronteira do nosso domínio
@@ -45,21 +46,22 @@ def sigma(y):
     return 2.0 * G * epsilon(y) + lambda_ * ufl.tr(epsilon(y)) * I 
 
 #funcao carregamento
-f = fem.Constant(domain, ScalarType((0,0,carregamento )))
+f = fem.Constant(domain, ScalarType((0,carregamento )))
 
 #Formulação variacional 
 a = ufl.inner(sigma(u), ufl.grad(v)) * ufl.dx
-L = ufl.dot(f, v) * ds(101)
+L = ufl.dot(f, v) * ufl.ds
+
 
 problem = fem.petsc.LinearProblem(a, L, bcs=[bc], petsc_options={"ksp_type": "preonly", "pc_type": "lu"})
 uh = problem.solve()
 
 
 from dolfinx.io import XDMFFile
-with XDMFFile(domain.comm, "malha001.xdmf", "w") as xdmf:
+with XDMFFile(domain.comm, "solucao.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
-   # xdmf.write_meshtags(facet_tags)
-   # xdmf.write_meshtags(cell_tags)
+    xdmf.write_meshtags(facet_tags)
+    xdmf.write_meshtags(cell_tags)
     xdmf.write_function(uh)
 
 

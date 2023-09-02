@@ -13,13 +13,14 @@ poisson = 0.3
 lambda_ = E*poisson / ((1+poisson)*(1-2*poisson))
 G = E / (2 * (1 + poisson))
 
-
+#malha de exemplo basico 
 domain= mesh.create_rectangle(MPI.COMM_WORLD, [np.array([0,0]), np.array([2,1])],
                   [400,400], cell_type=mesh.CellType.triangle)
 
+#espaço de funções 
 V = fem.VectorFunctionSpace(domain, ("CG", 1))
 
-#condições de contorno
+#condições de contorno , apenas um engaste no lado esquerdo 
 def clamped_boundary(x):
     return np.isclose(x[0], 0)
 
@@ -30,9 +31,9 @@ bc = fem.dirichletbc(u_D, fem.locate_dofs_topological(V, fdim, boundary_facets),
 
 
 #Aproximação das funções teste e funcao incognita
-u  = ufl.TrialFunction(V)
+u  = ufl.TrialFunction(V) # Utilização da função incognita para a forma bilinear 
 v  = ufl.TestFunction(V)
-uh = fem.Function(V)
+uh = fem.Function(V) #Função generica construir
 
 # Spatial dimension
 d = len(uh)
@@ -71,18 +72,20 @@ jacobian= ufl.derivative(F_bilinear,uh ,u)
 problem = fem.petsc.NonlinearProblem(F_bilinear,uh,[bc],jacobian)
 solver = nls.petsc.NewtonSolver(domain.comm, problem)
 
-solver.convergence_criterion = "residual"
-solver.max_it = 51
-solver.report = True
 
+# Set Newton solver options
+solver.convergence_criterion = "residual"
+solver.rtol = 1e-8
+solver.report = True
 solver.atol = 1e-12
 solver.solver_type = "gmres"
 solver.preconditioner_type = "lu"
 solver.initial_guess = None  # Pode ser um vetor ou None
-# solver.divergence_tolerance = 1e-4
+#solver.divergence_tolerance = 1e-4
 solver.monitor = None  # Pode ser uma função de monitoramento personalizada
 solver.line_search = True
-#solver.jacobian_update = "approximate"
+solver.jacobian_update = "approximate"
+solver.max_it = 51
 solver.error_on_nonconvergence = True
 
 

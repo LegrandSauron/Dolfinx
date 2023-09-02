@@ -15,7 +15,7 @@ G = E / (2 * (1 + poisson))
 
 
 domain= mesh.create_rectangle(MPI.COMM_WORLD, [np.array([0,0]), np.array([2,1])],
-                  [40,40], cell_type=mesh.CellType.triangle)
+                  [400,400], cell_type=mesh.CellType.triangle)
 
 V = fem.VectorFunctionSpace(domain, ("CG", 1))
 

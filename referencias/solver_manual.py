@@ -48,3 +48,6 @@ class CustomSolver(nls.petsc.NewtonSolver):
 
         self.linear_solver().set_from_options()
 
+
+"""status de convergencia do solucionador ksp"""
+#solver.getConvergedReason()

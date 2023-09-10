@@ -44,16 +44,13 @@ Code acknowledgments:
 
 
 # Fenics-related packages
-
-from dolfinx import fem, mesh,log,nls, cpp
+from dolfinx import *
 import numpy as np
 import math
 # Plotting packages
 import matplotlib.pyplot as plt
 # Current time package
 from datetime import datetime
-from sympy import dirichlet_eta
-import ufl
 
 
 # Set level of detail for log messages (integer)
@@ -66,7 +63,7 @@ import ufl
 # PROGRESS  = 16, // what's happening (broadly)
 # TRACE     = 13, // what's happening (in detail)
 # DBG       = 10  // sundry
-#log.set_log_level(30)
+log.set_log_level(30)
 
 
 #-----------------------------------------------------------
@@ -79,11 +76,11 @@ import ufl
 # various parameters. Here, we want to use the UFLACS backend of FFC::
 
 # Optimization options for the form compiler
-#parameters["form_compiler"]["cpp_optimize"] = True
-#parameters["form_compiler"]["representation"] = "uflacs"
-#parameters["form_compiler"]["cpp_optimize_flags"] = "-O3 -ffast-math -march=native"
-#quadDegree = 2
-#parameters["form_compiler"]["quadrature_degree"] = quadDegree
+fem.parameters["form_compiler"]["cpp_optimize"] = True
+parameters["form_compiler"]["representation"] = "uflacs"
+parameters["form_compiler"]["cpp_optimize_flags"] = "-O3 -ffast-math -march=native"
+quadDegree = 2
+parameters["form_compiler"]["quadrature_degree"] = quadDegree
 
 
 
@@ -118,11 +115,10 @@ a3 = (1-r3)/(1-r3**M3)
                 
 preMapLength = float(int1 + 2*M2*(int1/M1))
 
-domain =mesh.create_box((0.,-preMapLength, 0.0),(scaleX, preMapLength, scaleZ),xElem,N, zElem)
+mesh = BoxMesh(Point(0.,-preMapLength, 0.0),Point(scaleX, preMapLength, scaleZ),xElem,N, zElem)
 #mesh = BoxMesh(Point(0.,-scaleY/2,0.),Point(scaleX, scaleY/2, scaleZ),xElem,N,zElem)
 
-
-xOrig = domain.coordinates()
+xOrig = mesh.coordinates()
 xMap1 = np.zeros((len(xOrig),3))
 xMap2 = np.zeros((len(xOrig),3))
 xMap3 = np.zeros((len(xOrig),3))
@@ -166,9 +162,10 @@ for i in range(0,len(xMap3)):
 #int1*(a*(r**(np.abs(xOrig[i,1]/int1)*M)-1)/(r-1))*((xOrig[i,1]-int1+1.e-8)-np.abs(xOrig[i,1]-int1+1.e-8))/2/(xOrig[i,1]-int1+1.e-8)\
 #+ ((xOrig[i,1]-int1+1.e-8)+np.abs(xOrig[i,1]-int1+1.e-8))/2/(xOrig[i,1]-int1+1.e-8)*((xOrig[i,1]-int2+1.e-8)-np.abs(xOrig[i,1]-int2+1.e-8))/2/(xOrig[i,1]-int2+1.e-8)*xOrig[i,1]              
 
-domain.coordinates()[:] = xMap3
+mesh.coordinates()[:] = xMap3
 
-x = ufl.SpatialCoordinate(domain) 
+x = SpatialCoordinate(mesh) 
+
 
 #x = mesh.coordinates()
 
@@ -177,25 +174,14 @@ x = ufl.SpatialCoordinate(domain)
 #x[:,2] *= scaleZ
 
 #################### ##################################################
-"""Principais problemas :
-"""
-class SubDomain():
-    pass
-
-def near():
-    pass
-
-def project():
-    pass
 
 #Pick up on the boundary entities of the created mesh
-
 class Left(SubDomain):
     def inside(self, x, on_boundary):
         return near(x[0],0) and on_boundary
 class Bottom(SubDomain):
     def inside(self, x, on_boundary):
-        return np.isc(x[1] - (slope*scaleY*(x[0]-scaleX)/scaleX),-scaleY/2.) 
+        return near(x[1] - (slope*scaleY*(x[0]-scaleX)/scaleX),-scaleY/2.) 
 class Right(SubDomain):
     def inside(self, x, on_boundary):
         return near(x[0],scaleX) and on_boundary
@@ -225,15 +211,10 @@ class Right_diel(SubDomain):
     def inside(self, x, on_boundary):
         return near(x[0],scaleX) and (x[1]<=3.e0) and (x[1]>=-3.e0) and on_boundary    
 '''    
-
-
+         
 # Dirichlet boundary
 # Mark boundary subdomians
-
-"""facets: """
-facets = MeshFunction("size_t", domain, 2)  
-
-
+facets = MeshFunction("size_t", mesh, 2)
 facets.set_all(0)
 DomainBoundary().mark(facets, 1)  # First, mark all boundaries with common index
 # Next mark sepcific boundaries
@@ -246,38 +227,40 @@ Front().mark(facets,4)
 Back().mark(facets, 5)
 TopTop().mark(facets, 9)
 BottomBottom().mark(facets, 10)
-
-
-ds = ufl.Measure('ds', domain=domain, subdomain_data=facets)
+'''
+Left_diel().mark(facets, 9)
+Right_diel().mark(facets,10)
+'''
+#ds = Measure('ds')[facets]
+ds = Measure('ds', domain=mesh, subdomain_data=facets)
 
 tol=1e-5
 tol = 1.e-5
-class Omega_0(x):
+class Omega_0(SubDomain):
     def inside(self, x, on_boundary):
         return ((x[1] <= -int2 + tol) and (x[1]>= -scaleY/2 ))
 
-class Omega_1(x):
+class Omega_1(SubDomain):
     def inside(self, x, on_boundary):
         return ((x[1] >= -int2 - tol) and (x[1]<= int2 + tol))
     
-class Omega_2(x):
+class Omega_2(SubDomain):
     def inside(self, x, on_boundary):
         return ((x[1] >= int2 - tol) and (x[1]<= scaleY/2 ))  
     
-class Omega_3(x):
+class Omega_3(SubDomain):
     def inside(self, x, on_boundary):
         return (x[1] >= int2 - tol) and (x[1]<= int2 + 0.2*int1)  
     
-class Omega_4(x):
+class Omega_4(SubDomain):
     def inside(self, x, on_boundary):
         return (x[1]>= scaleY/2  )
     
-class Omega_5(x):
+class Omega_5(SubDomain):
     def inside(self, x, on_boundary):
         return (x[1]<= -scaleY/2  )
   
-fdim = domain, domain.topology.dim
-materials = MeshFunction("size_t", fdim, 0)
+materials = MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
 subdomain_0 = Omega_0()
 subdomain_1 = Omega_1()
 subdomain_2 = Omega_2()
@@ -291,13 +274,11 @@ subdomain_3.mark(materials, 3)
 subdomain_4.mark(materials, 4)
 subdomain_5.mark(materials, 5)
 
-dx = ufl.Measure('dx', domain=domain, subdomain_data=materials)
+dx = Measure('dx', domain=mesh, subdomain_data=materials)
 
 """
 Userdefined expression for defining different materials
 """
-
-
 class mat(UserExpression): 
     def __init__(self, materials, mat_0, mat_1, mat_2, **kwargs):
         super().__init__(**kwargs)
@@ -320,7 +301,7 @@ class mat(UserExpression):
             
     def value_shape(self):
         return () 
-   
+    
 class integralIndex(UserExpression): 
     def __init__(self, materials, intInd_0, intInd_1, **kwargs):
         super().__init__(**kwargs)
@@ -338,22 +319,22 @@ class integralIndex(UserExpression):
         return ()      
     
 
-intInd = integralIndex(materials, fem.Constant(1.), fem.Constant(0.), degree=0)
+intInd = integralIndex(materials, Constant(1.), Constant(0.), degree=0)
 
 # Material parameters    
 # M-mass; L-length; T-time; #-number of moles; Q-charge; K- temperature
 #Eyoung = mat(materials, Constant(500.e-6), Constant(500.e-6), Constant(500.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(2*200.e-6), Constant(3000.e-6), Constant(500.0e-6), degree=0)
 
-matInd = mat(materials, fem.Constant(1.), fem.Constant(0.), fem.Constant(1.))
+matInd = mat(materials, Constant(1.), Constant(0.), Constant(1.))
 #Eyoung = mat(materials, Constant(200.e-6), Constant(0.1e-6), Constant(500.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*0.1e-6), Constant(30*500.0e-6), degree=0)
 #Gshear = mat(materials, Constant(67.e-6), Constant(0.034e-6), Constant(167.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(100.0*67.e-6), Constant(1000*0.034e-6), Constant(100.0*167.0e-6), degree=0)  
-Gshear = mat(materials, fem.Constant(0.003e-6), fem.Constant(0.034e-6), fem.Constant(0.2e-6), degree=0)  
-Kbulk = mat(materials, fem.Constant(2000*0.003e-6), fem.Constant(2000*0.034e-6),fem.Constant(2000.0*0.2e-6), degree=0)  
+Gshear = mat(materials, Constant(0.003e-6), Constant(0.034e-6), Constant(0.2e-6), degree=0)  
+Kbulk = mat(materials, Constant(2000*0.003e-6), Constant(2000*0.034e-6), Constant(2000.0*0.2e-6), degree=0)  
 Gshear0 = 100.0e-6 
-Im_gent = mat(materials, fem.Constant(300), fem.Constant(90.0), fem.Constant(90.0), degree=0)
+Im_gent = mat(materials, Constant(300), Constant(90.0), Constant(90.0), degree=0)
 """
 matInd = mat(materials, Constant(1.), Constant(1.), Constant(1.))
 Eyoung = mat(materials, Constant(200.e-6), Constant(200.e-6), Constant(200.e-6), degree=0)  
@@ -366,32 +347,29 @@ D = 1.e-2 #1.0e0                 # Diffusivity [L2T-1]
 RT = 8.3145e-3*(273.0+20.0)      # Gas constant*Temp [ML2T-2#-1]
 Farad = 96485.e-6                # Faraday constant [Q#-1]
 #L_debye = 0.01*scaleY # 6e-3 #12.0e-3 #600.0e-3
-
 # Initial concentrations
-Concentracao_positiva = 0.274                # Initial concentration [#L-3]
-concentracao_negativa = Concentracao_positiva                # Initial concentration [#L-3]
-concentracao_maxima = 10000*1e-9 #0.00001*1e-9 # 10000e0*1.e-9
+cPos0 = 0.274                # Initial concentration [#L-3]
+cNeg0 = cPos0                # Initial concentration [#L-3]
+cMax = 10000*1e-9 #0.00001*1e-9 # 10000e0*1.e-9
 
-vareps0 = fem.Constant(8.85e-12*1e-6)
-vareps_num =  mat(materials, fem.Constant(1.0e4), fem.Constant(1.0), fem.Constant(1.0), degree=1)
-vareps_r = mat(materials, fem.Constant(80), fem.Constant(6.5), fem.Constant(6.5))
+vareps0 = Constant(8.85e-12*1e-6)
+vareps_num =  mat(materials, Constant(1.0e4), Constant(1.0), Constant(1.0), degree=1)
+vareps_r = mat(materials, Constant(80), Constant(6.5), Constant(6.5))
 vareps = vareps0*vareps_r*vareps_num
 #vareps = Constant(Farad*Farad*(cMax*(cPos0+cNeg0))/RT*L_debye*L_debye)
 
-
 # Mass density
-densidade_massa = fem.Constant(1e-9)  # 1e3 kg/m^3 = 1e-9 mg/um^3,
+rho = Constant(1e-9)  # 1e3 kg/m^3 = 1e-9 mg/um^3,
 
 # Rayleigh damping coefficients
-eta_m = fem.Constant(0.00000) # Constant(0.000005)
-eta_k = fem.Constant(0.00000) # Constant(0.000005)
+eta_m = Constant(0.00000) # Constant(0.000005)
+eta_k = Constant(0.00000) # Constant(0.000005)
 
 
-"""Constantes do metodo alpha generalizado """
 # Generalized-alpha method parameters
-alpha = fem.Constant(0.0)
-gamma   = fem.Constant(0.5+alpha)
-beta    = fem.Constant((gamma+0.5)**2/4.)
+alpha = Constant(0.0)
+gamma   = Constant(0.5+alpha)
+beta    = Constant((gamma+0.5)**2/4.)
 
 
 #Simulation time related params (reminder: in microseconds)
@@ -412,67 +390,64 @@ dt = T2_tot/500
 phi_norm = RT/Farad # "Thermal" Volt
 
 # Define function space, scalar
-U2 = ufl.VectorElement("Lagrange", domain.ufl_cell(), 1)
-P1 = ufl.FiniteElement("Lagrange", domain.ufl_cell(), 1)
-D0 = ufl.FiniteElement("DG", domain.ufl_cell(), 0)
-D1 = ufl.FiniteElement("DG", domain.ufl_cell(), 1)
-
+U2 = VectorElement("Lagrange", mesh.ufl_cell(), 1)
+P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+D0 = FiniteElement("DG", mesh.ufl_cell(), 0)
+D1 = FiniteElement("DG", mesh.ufl_cell(), 1)
 
 # DOFs
-TH = ufl.MixedElement([U2, P1, P1, P1])
-#ME = ufl.FunctionSpace(domain, TH) # Total space for all DOFs
-ME= ufl.MixedFunctionSpace([U2, P1, P1, P1])
+TH = MixedElement([U2, P1, P1, P1])
+ME = FunctionSpace(mesh, TH) # Total space for all DOFs
 
-W = ufl.FunctionSpace(domain,P1)   # Scalar space for visualization later
-W2 = ufl.FunctionSpace(domain,U2)   # Vector space for visualization later
-W3 = ufl.FunctionSpace(domain,D0)   # DG space for visualization later
-W4 = ufl.FunctionSpace(domain,D1)   # DG space for visualization later
+W = FunctionSpace(mesh,P1)   # Scalar space for visualization later
+W2 = FunctionSpace(mesh,U2)   # Vector space for visualization later
+W3 = FunctionSpace(mesh,D0)   # DG space for visualization later
+W4 = FunctionSpace(mesh,D1)   # DG space for visualization later
 
 # Define test functions in weak form
-dw = ufl.TrialFunction(ME)                                   
-(u_test, omgPos_test, phi_test, omgNeg_test)  = ufl.TestFunctions(ME)    # Test function
+dw = TrialFunction(ME)                                   
+(u_test, omgPos_test, phi_test, omgNeg_test)  = TestFunctions(ME)    # Test function
 
 # Define actual functions with the required DOFs
-w = fem.Function(ME)
-(u, omgPos, phi, omgNeg) = ufl.split(w)    # current DOFs
+w = Function(ME)
+(u, omgPos, phi, omgNeg) = split(w)    # current DOFs
 
 # A copy of functions to store values in last step for time-stepping.
-w_old = fem.Function(ME)
-(u_old, omgPos_old, phi_old, omgNeg_old) = ufl.split(w_old)   # old DOFs
+w_old = Function(ME)
+(u_old, omgPos_old, phi_old, omgNeg_old) = split(w_old)   # old DOFs
 
-v_old = fem.Function(W2)
-a_old = fem.Function(W2)
+v_old = Function(W2)
+a_old = Function(W2)
 
 # Initial chemical potential
-mu0 = ufl.ln(Concentracao_positiva)
-mu20 = ufl.ln(concentracao_negativa)
+mu0 = ln(cPos0)
+mu20 = ln(cNeg0)
 
 
 
-
-init_omgPos = fem.Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cPos0)):std::log((cNum))', int2=int2, scaleY=scaleY, tol = tol, cPos0 = Concentracao_positiva, cNum=DOLFIN_EPS, degree=0)
-omgPos_init =interpolate(init_omgPos,ME.sub(1).collapse())
+init_omgPos = Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cPos0)):std::log((cNum))', int2=int2, scaleY=scaleY, tol = tol, cPos0 = cPos0, cNum=DOLFIN_EPS, degree=0)
+omgPos_init = interpolate(init_omgPos,ME.sub(1).collapse())
 assign(w_old.sub(1),omgPos_init)
 
 
-init_omgNeg = fem.Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cNeg0)):std::log((cNum))', int2=int2, scaleY=scaleY, tol = tol, cNeg0 = concentracao_negativa,  cNum=DOLFIN_EPS, degree=0)
+init_omgNeg = Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cNeg0)):std::log((cNum))', int2=int2, scaleY=scaleY, tol = tol, cNeg0 = cNeg0,  cNum=DOLFIN_EPS, degree=0)
 omgNeg_init = interpolate(init_omgNeg,ME.sub(3).collapse())
-
-fem.assign(w_old.sub(3),omgNeg_init)
+assign(w_old.sub(3),omgNeg_init)
 
 # Update initial guess for w
-fem.assign(w.sub(3),omgNeg_init)
+assign(w.sub(3),omgNeg_init)
 assign(w.sub(1),omgPos_init)
 #assign(w.sub(5),cNeg_init)
 #assign(w.sub(2),cPos_init)
 
-cPos     = ufl.exp(omgPos - Farad*phi*phi_norm/RT)
-cNeg     = ufl.exp(omgNeg + Farad*phi*phi_norm/RT)
-cPos_old = ufl.exp(omgNeg_old + Farad*phi_old*phi_norm/RT)
+cPos     = exp(omgPos - Farad*phi*phi_norm/RT)
+cNeg     = exp(omgNeg + Farad*phi*phi_norm/RT)
+cPos_old = exp(omgPos_old - Farad*phi_old*phi_norm/RT)
+cNeg_old = exp(omgNeg_old + Farad*phi_old*phi_norm/RT)
 
 #Ny = N+1
 #y = np.linspace(0, scaleY, Ny)
-y = np.sort(np.array(domain.coordinates()[:,1])) #np.linspace(-scaleY/2, scaleY/2, Ny)
+y = np.sort(np.array(mesh.coordinates()[:,1])) #np.linspace(-scaleY/2, scaleY/2, Ny)
 #f = 2/0
 
 # Quick-calculate sub-routines
@@ -480,36 +455,35 @@ y = np.sort(np.array(domain.coordinates()[:,1])) #np.linspace(-scaleY/2, scaleY/
 
 def F_calc(u):
     dim = len(u)
-    Id = ufl.Identity(dim) # Identity tensor
+    Id = Identity(dim) # Identity tensor
     
-    F = Id + ufl.grad(u) # 3D Deformation gradient
+    F = Id + grad(u) # 3D Deformation gradient
     return F # Full 3D F
 
     
 def Piola(F,phi):
     
-    Id = ufl.Identity(3)
-    J = ufl.det(F)
+    Id = Identity(3)
+    J = det(F)
     
     C = F.T*F
-    Cdis = J**(-2/3)*C  
-    I1 = ufl.tr(Cdis)
+    Cdis = J**(-2/3)*C
+    I1 = tr(Cdis)
          
-    eR = -phi_norm*ufl.grad(phi)
-    e_sp = ufl.inv(F.T)*eR
+    eR = -phi_norm*grad(phi)
+    e_sp = inv(F.T)*eR
     #
-    T_max = vareps0*vareps_r*J*(ufl.outer(e_sp,e_sp) - 1/2*(ufl.inner(e_sp,e_sp))*Id)*ufl.inv(F.T) 
+    T_max = vareps0*vareps_r*J*(outer(e_sp,e_sp) - 1/2*(inner(e_sp,e_sp))*Id)*inv(F.T) 
     
     # Piola stress (Gent)
-    TR = J**(-2/3)*Gshear*(Im_gent/(Im_gent+3-I1))*(F - 1/3*ufl.tr(Cdis)*ufl.inv(F.T))\
-        + Kbulk*ufl.ln(J)*ufl.inv(F.T) + T_max
+    TR = J**(-2/3)*Gshear*(Im_gent/(Im_gent+3-I1))*(F - 1/3*tr(Cdis)*inv(F.T))\
+        + Kbulk*ln(J)*inv(F.T) + T_max
     
     return TR
 
 # variable time step
-dk = fem.Constant(0.0)
+dk = Constant(0.0)
 
-"""funções de aceleração, velocidade e campo"""
 # Update formula for acceleration
 # a = 1/(2*beta)*((u - u0 - v0*dt)/(0.5*dt*dt) - (1-2*beta)*a0)
 def update_a(u, u_old, v_old, a_old, ufl=True):
@@ -520,7 +494,6 @@ def update_a(u, u_old, v_old, a_old, ufl=True):
         dt_ = float(dk)
         beta_ = float(beta)
     return (u-u_old-dt_*v_old)/beta_/dt_**2 - (1-2*beta_)/2/beta_*a_old
-
 
 # Update formula for velocity
 # v = dt * ((1-gamma)*a0 + gamma*a) + v0
@@ -570,38 +543,38 @@ phi_avg    = avg(phi_old, phi, alpha)
 omgNeg_avg = avg(omgNeg_old, omgNeg, alpha)
 
 # Explicit concentration updates
-cPos     = ufl.exp(omgPos_avg - phi_avg)
-cNeg     = ufl.exp(omgNeg_avg + phi_avg)
-cPos_old = ufl.exp(omgPos_old - phi_old)
-cNeg_old = ufl.exp(omgNeg_old + phi_old)
+cPos     = exp(omgPos_avg - phi_avg)
+cNeg     = exp(omgNeg_avg + phi_avg)
+cPos_old = exp(omgPos_old - phi_old)
+cNeg_old = exp(omgNeg_old + phi_old)
 
 
 # Kinematics
 F = F_calc(u_avg)
 C = F.T*F
-Ci = ufl.inv(C)
+Ci = inv(C)
 F_old = F_calc(u_old) #grad(u_old) + Identity(3)
-J = ufl.det(F)
-J_old = ufl.det(F_old)
+J = det(F)
+J_old = det(F_old)
 
 
 '''''''''''''''''''''''
        WEAK FORMS
 '''''''''''''''''''''''
 
-dynSwitch = fem.Constant(1.0)
+dynSwitch = Constant(1.0)
      
-L0 = ufl.inner(Piola(F_calc(u_avg), phi_avg), ufl.grad(u_test))*dx \
-         + dynSwitch*densidade_massa*ufl.inner(a_new, u_test)*dx 
+L0 = inner(Piola(F_calc(u_avg), phi_avg), grad(u_test))*dx \
+         + dynSwitch*rho*inner(a_new, u_test)*dx 
     
-L1 = ufl.dot((cPos-cPos_old)/dk/D,omgPos_test)*dx \
-    + (cPos_old)*ufl.inner(Ci*matInd*ufl.grad(omgPos_avg),ufl.grad(omgPos_test))*dx
+L1 = dot((cPos-cPos_old)/dk/D,omgPos_test)*dx \
+    + (cPos_old)*inner(Ci*matInd*grad(omgPos_avg),grad(omgPos_test))*dx
    
-L3 = ufl.dot(vareps*phi_norm*J*Ci*ufl.grad(phi_avg),ufl.grad(phi_test))*dx \
-     -ufl.dot(Farad*matInd*concentracao_maxima*(cPos-cNeg),phi_test)*dx 
+L3 = dot(vareps*phi_norm*J*Ci*grad(phi_avg),grad(phi_test))*dx \
+     -dot(Farad*matInd*cMax*(cPos-cNeg),phi_test)*dx 
 
-L4 = ufl.dot((cNeg-cNeg_old)/dk/D,omgNeg_test)*dx \
-    + (cNeg_old)*ufl.dot(Ci*matInd*ufl.grad(omgNeg_avg),ufl.grad(omgNeg_test))*dx
+L4 = dot((cNeg-cNeg_old)/dk/D,omgNeg_test)*dx \
+    + (cNeg_old)*dot(Ci*matInd*grad(omgNeg_avg),grad(omgNeg_test))*dx
   
 
 # Total weak form
@@ -611,57 +584,57 @@ L = (1/Gshear0)*L0 + L1 + L3 + L4
 L = L0 + L1 + L2 + L3
 """
 # Automatic differentiation tangent:
-a = ufl.derivative(L, w, dw)
+a = derivative(L, w, dw)
 
 
 # Boundary condition expressions as necessary
 
-disp = fem.Expression(("0.5*t/Tramp"),
+disp = Expression(("0.5*t/Tramp"),
                   Tramp = T2_tot-T_tot, t = 0.0, degree=1)
-disp2 = fem.Expression(("-0.5*t/Tramp"),
+disp2 = Expression(("-0.5*t/Tramp"),
                   Tramp = T2_tot-T_tot, t = 0.0, degree=1)
 
-phiRamp = fem.Expression(("(250/phi_norm)*t/Tramp"),
+phiRamp = Expression(("(250/phi_norm)*t/Tramp"),
                   phi_norm = phi_norm, Tramp = T_tot, t = 0.0, degree=1)
 
 # Boundary condition definitions
 
-bcs_1 = fem.dirichletbc(ME.sub(2), 0., facets, 8) # Ground center of device
-bcs_2 = fem.dirichletbc(ME.sub(2), 0., facets, 6) # Ground top of device
-bcs_3 = fem.dirichletbc(ME.sub(2), 0., facets, 3) # Ground bottom of device
+bcs_1 = DirichletBC(ME.sub(2), 0., facets, 8) # Ground center of device
+bcs_2 = DirichletBC(ME.sub(2), 0., facets, 6) # Ground top of device
+bcs_3 = DirichletBC(ME.sub(2), 0., facets, 3) # Ground bottom of device
 
-bcs_4 = fem.dirichletbc(ME.sub(2), phiRamp, facets, 6) # Ground bottom of device
+bcs_4 = DirichletBC(ME.sub(2), phiRamp, facets, 6) # Ground bottom of device
 
-bcs_a = fem.dirichletbc(ME.sub(0).sub(0),0.,facets,2)
+bcs_a = DirichletBC(ME.sub(0).sub(0),0.,facets,2)
 
 
 x_plot = scaleX
 phi_eq = w_old(x_plot, scaleY/2, scaleZ/2)[4]
 #phiRamp = Expression(("phi_eq + 2.0e3/phi_norm*(1-exp(-10*t/Tramp)) + 1.e3/phi_norm*sin(2*pi*f*t/1e6)"),
 #                 phi_eq=phi_eq, phi_norm = phi_norm, pi=np.pi, f=100,  Tramp = T2_tot, t = 0.0, degree=1)
-phiRamp = fem.Expression(("min(1.0e3/phi_norm*(t/Tramp), 1.0e3/phi_norm)"),
+phiRamp = Expression(("min(1.0e3/phi_norm*(t/Tramp), 1.0e3/phi_norm)"),
                  phi_eq=phi_eq, phi_norm = phi_norm, pi=np.pi, Tramp = T2_tot, t = 0.0, degree=2)
-disp = fem.Expression(("5.5*scaleX*t/Tramp"),
+disp = Expression(("5.5*scaleX*t/Tramp"),
                   scaleX = scaleX, Tramp = T2_tot, t = 0.0, degree=1)\
     
-bcs_f = fem.dirichletbc(ME.sub(2),phiRamp,facets,6) # Ramp up phi on top face
+bcs_f = DirichletBC(ME.sub(2),phiRamp,facets,6) # Ramp up phi on top face
 
 #bcs_b1 = DirichletBC(ME.sub(0),Constant((0.,0., 0.)),facets,2) # left face built-in
-bcs_b1 = fem.dirichletbc(ME.sub(0).sub(0),0.0,facets,2) # pull right face
-bcs_b2 = fem.dirichletbc(ME.sub(0).sub(0),disp,facets,7) # pull right face
-bcs_b3 = fem.dirichletbc(ME.sub(0).sub(1),0.0,facets,10)
-bcs_b3a = fem.dirichletbc(ME.sub(0).sub(0),0.0,facets,10)
-bcs_b3b = fem.dirichletbc(ME.sub(0).sub(2),0.0,facets,10)
-bcs_b3c = fem.dirichletbc(ME.sub(0).sub(0),0.0,facets,9)
-bcs_b3d = fem.dirichletbc(ME.sub(0).sub(2),0.0,facets,9)
-bcs_b4 = fem.dirichletbc(ME.sub(0).sub(2),0.0,facets,5)
+bcs_b1 = DirichletBC(ME.sub(0).sub(0),0.0,facets,2) # pull right face
+bcs_b2 = DirichletBC(ME.sub(0).sub(0),disp,facets,7) # pull right face
+bcs_b3 = DirichletBC(ME.sub(0).sub(1),0.0,facets,10)
+bcs_b3a = DirichletBC(ME.sub(0).sub(0),0.0,facets,10)
+bcs_b3b = DirichletBC(ME.sub(0).sub(2),0.0,facets,10)
+bcs_b3c = DirichletBC(ME.sub(0).sub(0),0.0,facets,9)
+bcs_b3d = DirichletBC(ME.sub(0).sub(2),0.0,facets,9)
+bcs_b4 = DirichletBC(ME.sub(0).sub(2),0.0,facets,5)
 
 
 #bcs2 = [bcs_3, bcs_a, bcs_b1, bcs_b3, bcs_b3a, bcs_b3b, bcs_b3c, bcs_b3d, bcs_b4, bcs_f]
 
 bcs2 = [bcs_3, bcs_a, bcs_b1, bcs_b3, bcs_b4, bcs_f]
 
-from dolfinx.io import XDMFFile
+
 # Output file setup
 file_results = XDMFFile("results/suo_capacitor_3D_traction.xdmf")
 file_results.parameters["flush_output"] = True
@@ -703,7 +676,7 @@ file_results.write(intInd_v,t)
 # Initialize arrays for plotting later
 Ny = N+1
 x_plot = scaleX
-y = np.sort(np.array(domain.coordinates()[np.where(domain.coordinates()[:,0] == x_plot),1])) #np.linspace(-scaleY/2, scaleY/2, Ny)
+y = np.sort(np.array(mesh.coordinates()[np.where(mesh.coordinates()[:,0] == x_plot),1])) #np.linspace(-scaleY/2, scaleY/2, Ny)
 y = y[0,:]
 y2 = np.linspace(0, scaleY/10, Ny) 
 
@@ -730,7 +703,7 @@ jj = 0
 spike = 0
 
 # Turn on implicit dynamics
-dynSwitch.assign(fem.Constant(1.0))
+dynSwitch.assign(Constant(1.0))
 
 voltage_out = np.zeros(100000)
 charge_out = np.zeros(100000)
@@ -780,7 +753,7 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
     phiRamp.t = t - T_tot - float(alpha*dt)
     
     trac_final = 0.040e-6 # 40 kPa total
-    n = ufl.FacetNormal(domain)
+    n = FacetNormal(mesh)
     
     if t-T_tot<=T2_tot:
         trac_value = 0.0
@@ -790,12 +763,12 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
     trac = -trac_value*n
     trac_out[jj] = trac_value
        
-    Ltrac = -ufl.dot(trac/Gshear0, u_test)*ds(9) # + dot(trac/Gshear0, u_test)*ds(3)
+    Ltrac = -dot(trac/Gshear0, u_test)*ds(9) # + dot(trac/Gshear0, u_test)*ds(3)
     # Set up the non-linear problem (free swell)
-    StressProblem = fem.petsc.NonlinearProblem(L+Ltrac, w, bcs2, J=a)
+    StressProblem = NonlinearVariationalProblem(L+Ltrac, w, bcs2, J=a)
     
     # Set up the non-linear solver
-    solver  = nls.petsc.NewtonSolver(StressProblem)
+    solver  = NonlinearVariationalSolver(StressProblem)
     # Solver parameters
     
     prm = solver.parameters
@@ -820,7 +793,7 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
     ocv_out[jj] = phi_top - phi_btm
     t_out[jj]   = t - T_tot -float(alpha*dt)
     #
-    charge_out[ii] = assemble(Farad*concentracao_maxima*(cPos-cNeg)*dx(3))
+    charge_out[ii] = assemble(Farad*cMax*(cPos-cNeg)*dx(3))
     
     
     u_proj = project(u, W2)

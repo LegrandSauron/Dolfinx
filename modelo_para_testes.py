@@ -1,46 +1,3 @@
-"""
-Code for hydrogel ionotronics.
-
-- with the model comprising:
-    > Large deformation compressible Gent elasticity
-    > Dilute-solution mixing model for the 
-        diffusing cation and anion
-        and
-    > Electro-quasistatics
-    
-
-- with the numerical degrees of freedom:
-    > vector displacements
-    > scalar electrochemical potentials
-    > scalar electrostatic potential.
-    
-- with basic units:
-    > Length: mu-m
-    >   Time: mu-s
-    >   Mass: mg
-    >  Moles: n-mol
-    > Charge: mC
-    
-    Eric M. Stewart    and    Sooraj Narayan,   
-   (ericstew@mit.edu)        (soorajn@mit.edu)     
-    
-                   Fall 2022 
-                   
-   
-Note: This code will yield revelant results from the ionotronics paper, but is
-  not yet fully cleaned up. In the near future I plan to make edits to render 
-  it more readable, remove extraneous features, and provide more detailed 
-  explanatory comments.
-
-                   
-Code acknowledgments:
-    
-    - Jeremy Bleyer, whose `elastodynamics' code was a useful reference for 
-      constructing our own implicit dynamic solution procedure.
-     (https://comet-fenics.readthedocs.io/en/latest/demo/elastodynamics/demo_elastodynamics.py.html)
-         
-    
-"""
 
 
 # Fenics-related packages
@@ -54,38 +11,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from sympy import dirichlet_eta
 import ufl
-
-
-# Set level of detail for log messages (integer)
-# 
-# Guide:
-# CRITICAL  = 50, // errors that may lead to data corruption
-# ERROR     = 40, // things that HAVE gone wrong
-# WARNING   = 30, // things that MAY go wrong later
-# INFO      = 20, // information of general interest (includes solver info)
-# PROGRESS  = 16, // what's happening (broadly)
-# TRACE     = 13, // what's happening (in detail)
-# DBG       = 10  // sundry
-#log.set_log_level(30)
-
-
-#-----------------------------------------------------------
-# Global Fenics parameters
-# parameters["form_compiler"]["cpp_optimize"]=True
-# parameters["form_compiler"]["optimize"] = True
-# set_log_level(30)
-
-# The behavior of the form compiler FFC can be adjusted by prescribing
-# various parameters. Here, we want to use the UFLACS backend of FFC::
-
-# Optimization options for the form compiler
-#parameters["form_compiler"]["cpp_optimize"] = True
-#parameters["form_compiler"]["representation"] = "uflacs"
-#parameters["form_compiler"]["cpp_optimize_flags"] = "-O3 -ffast-math -march=native"
-#quadDegree = 2
-#parameters["form_compiler"]["quadrature_degree"] = quadDegree
-
-
 
 
 
@@ -129,43 +54,6 @@ xMap3 = np.zeros((len(xOrig),3))
 
 slope = 0.00
 
-for i in range(0,len(xMap1)):
-
-    xMap1[i,0] = xOrig[i,0] 
-    xMap1[i,2] = xOrig[i,2] 
-      
-    if np.abs(xOrig[i,1]) < (preMapLength - M2*(int1/M1) - int1)+1.e-8:
-        xMap1[i,1] = (int2/int1)*(M1/M2)*xOrig[i,1] 
-    else:
-        xMap1[i,1] = xOrig[i,1] + np.sign(xOrig[i,1])*(int2 - M2*(int1/M1))
-
-
-for i in range(0,len(xMap2)):
-
-    xMap2[i,0] = xMap1[i,0] 
-    xMap2[i,2] = xMap1[i,2] 
-      
-    if np.abs(xMap1[i,1]) > int2 and np.abs(xMap1[i,1]) < int3 + 1e-8:
-        xMap2[i,1] = np.sign(xMap1[i,1])*(int3-(int3-int2)*(a3*(r3**((int3-np.abs(xMap1[i,1]))/(int3-int2)*M3)-1)/(r3-1)))
-    elif np.abs(xMap1[i,1]) < int2+1.e-8:
-        xMap2[i,1] = xMap1[i,1] #np.sign(xOrig[i,1])*(int2*(a2*(r2**(np.abs(xOrig[i,1])/int2*(M2))-1)/(r2-1)))
-        #xMap2[i,0] = xMap1[i,0]*2.0
-    elif np.abs(xMap1[i,1]) > scaleY/2 - 1.e-8:
-        xMap2[i,1] = xMap1[i,1] 
-    else:
-        xMap2[i,1] = np.sign(xMap1[i,1])*(int3 + (scaleY/2 - int3)*(a3*(r3**((np.abs(xMap1[i,1])-int3)/(scaleY/2 - int3)*M3)-1)/(r3-1))) 
-
-for i in range(0,len(xMap3)):
-
-    xMap3[i,0] = xMap2[i,0]    
-    xMap3[i,2] = xMap2[i,2] 
-    if np.abs(xMap2[i,1]) > scaleY/2 - 1e-8:
-        xMap3[i,1] = xMap2[i,1] + np.sign(xMap2[i,1])*((int4/int1)*(M1/M2)-1)*(np.abs(xMap2[i,1]) - scaleY/2)
-    else:
-        xMap3[i,1] = xMap2[i,1]
-#int1*(a*(r**(np.abs(xOrig[i,1]/int1)*M)-1)/(r-1))*((xOrig[i,1]-int1+1.e-8)-np.abs(xOrig[i,1]-int1+1.e-8))/2/(xOrig[i,1]-int1+1.e-8)\
-#+ ((xOrig[i,1]-int1+1.e-8)+np.abs(xOrig[i,1]-int1+1.e-8))/2/(xOrig[i,1]-int1+1.e-8)*((xOrig[i,1]-int2+1.e-8)-np.abs(xOrig[i,1]-int2+1.e-8))/2/(xOrig[i,1]-int2+1.e-8)*xOrig[i,1]              
-
 domain.coordinates()[:] = xMap3
 
 x = ufl.SpatialCoordinate(domain) 
@@ -188,199 +76,24 @@ def near():
 def project():
     pass
 
-#Pick up on the boundary entities of the created mesh
-
-class Left(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[0],0) and on_boundary
-class Bottom(SubDomain):
-    def inside(self, x, on_boundary):
-        return np.isc(x[1] - (slope*scaleY*(x[0]-scaleX)/scaleX),-scaleY/2.) 
-class Right(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[0],scaleX) and on_boundary
-class Top(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[1]- (slope*scaleY*(x[0]-scaleX)/scaleX),scaleY/2) 
-class Center(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[1]- (slope*scaleY*(x[0]-scaleX)/scaleX),0.)  
-class Front(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[2],scaleZ) and on_boundary
-class Back(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[2],0.) and on_boundary
-class BottomBottom(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[1],-scaleY/2. - int4, eps=1e-10) and on_boundary
-class TopTop(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[1],scaleY/2+int4, eps=1e-10) and on_boundary  
-''' 
-class Left_diel(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[0],0) and (x[1]<=3.e0) and (x[1]>=-3.e0) and on_boundary
-class Right_diel(SubDomain):
-    def inside(self, x, on_boundary):
-        return near(x[0],scaleX) and (x[1]<=3.e0) and (x[1]>=-3.e0) and on_boundary    
-'''    
-
-
+def MeshFunction():
+    return
 # Dirichlet boundary
 # Mark boundary subdomians
 
 """facets: """
-facets = MeshFunction("size_t", domain, 2)  
 
 
-facets.set_all(0)
-DomainBoundary().mark(facets, 1)  # First, mark all boundaries with common index
-# Next mark sepcific boundaries
-Left().mark(facets, 2)
-Bottom().mark(facets, 3)
-Top().mark(facets,6)
-Right().mark(facets,7)
-Center().mark(facets,8)
-Front().mark(facets,4)
-Back().mark(facets, 5)
-TopTop().mark(facets, 9)
-BottomBottom().mark(facets, 10)
-
-
-ds = ufl.Measure('ds', domain=domain, subdomain_data=facets)
 
 tol=1e-5
 tol = 1.e-5
-class Omega_0(x):
-    def inside(self, x, on_boundary):
-        return ((x[1] <= -int2 + tol) and (x[1]>= -scaleY/2 ))
 
-class Omega_1(x):
-    def inside(self, x, on_boundary):
-        return ((x[1] >= -int2 - tol) and (x[1]<= int2 + tol))
-    
-class Omega_2(x):
-    def inside(self, x, on_boundary):
-        return ((x[1] >= int2 - tol) and (x[1]<= scaleY/2 ))  
-    
-class Omega_3(x):
-    def inside(self, x, on_boundary):
-        return (x[1] >= int2 - tol) and (x[1]<= int2 + 0.2*int1)  
-    
-class Omega_4(x):
-    def inside(self, x, on_boundary):
-        return (x[1]>= scaleY/2  )
-    
-class Omega_5(x):
-    def inside(self, x, on_boundary):
-        return (x[1]<= -scaleY/2  )
-  
-fdim = domain, domain.topology.dim
-materials = MeshFunction("size_t", fdim, 0)
-subdomain_0 = Omega_0()
-subdomain_1 = Omega_1()
-subdomain_2 = Omega_2()
-subdomain_3 = Omega_3()
-subdomain_4 = Omega_4()
-subdomain_5 = Omega_5()
-subdomain_0.mark(materials, 0)
-subdomain_1.mark(materials, 1)
-subdomain_2.mark(materials, 2)
-subdomain_3.mark(materials, 3)
-subdomain_4.mark(materials, 4)
-subdomain_5.mark(materials, 5)
-
-dx = ufl.Measure('dx', domain=domain, subdomain_data=materials)
 
 """
 Userdefined expression for defining different materials
 """
-
-
-class mat(UserExpression): 
-    def __init__(self, materials, mat_0, mat_1, mat_2, **kwargs):
-        super().__init__(**kwargs)
-        self.materials = materials
-        self.k_0 = mat_0
-        self.k_1 = mat_1
-        self.k_2 = mat_2
-        
-    def eval_cell(self, values, x, cell):
-        if self.materials[cell.index] == 0:
-            values[0] = self.k_0
-        elif self.materials[cell.index] == 1:
-            values[0] = self.k_1
-        elif self.materials[cell.index] == 4:
-            values[0] = self.k_2
-        elif self.materials[cell.index] == 5:
-            values[0] = self.k_2
-        else:
-            values[0] = self.k_0
-            
-    def value_shape(self):
-        return () 
-   
-class integralIndex(UserExpression): 
-    def __init__(self, materials, intInd_0, intInd_1, **kwargs):
-        super().__init__(**kwargs)
-        self.materials = materials
-        self.k_0 = intInd_0
-        self.k_1 = intInd_1
-        
-    def eval_cell(self, values, x, cell):
-        if self.materials[cell.index] == 3:
-            values[0] = self.k_0
-        else:
-            values[0] = self.k_1
-            
-    def value_shape(self):
-        return ()      
-    
-
-intInd = integralIndex(materials, fem.Constant(1.), fem.Constant(0.), degree=0)
-
-# Material parameters    
-# M-mass; L-length; T-time; #-number of moles; Q-charge; K- temperature
-#Eyoung = mat(materials, Constant(500.e-6), Constant(500.e-6), Constant(500.0e-6), degree=0)  
-#Kbulk = mat(materials, Constant(2*200.e-6), Constant(3000.e-6), Constant(500.0e-6), degree=0)
-
-matInd = mat(materials, fem.Constant(1.), fem.Constant(0.), fem.Constant(1.))
-#Eyoung = mat(materials, Constant(200.e-6), Constant(0.1e-6), Constant(500.0e-6), degree=0)  
-#Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*0.1e-6), Constant(30*500.0e-6), degree=0)
-#Gshear = mat(materials, Constant(67.e-6), Constant(0.034e-6), Constant(167.0e-6), degree=0)  
-#Kbulk = mat(materials, Constant(100.0*67.e-6), Constant(1000*0.034e-6), Constant(100.0*167.0e-6), degree=0)  
-Gshear = mat(materials, fem.Constant(0.003e-6), fem.Constant(0.034e-6), fem.Constant(0.2e-6), degree=0)  
-Kbulk = mat(materials, fem.Constant(2000*0.003e-6), fem.Constant(2000*0.034e-6),fem.Constant(2000.0*0.2e-6), degree=0)  
-Gshear0 = 100.0e-6 
-Im_gent = mat(materials, fem.Constant(300), fem.Constant(90.0), fem.Constant(90.0), degree=0)
-"""
-matInd = mat(materials, Constant(1.), Constant(1.), Constant(1.))
-Eyoung = mat(materials, Constant(200.e-6), Constant(200.e-6), Constant(200.e-6), degree=0)  
-Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*200.e-6), Constant(30*200.e-6), degree=0) 
-"""
-#Gshear = 3.*Kbulk*Eyoung/(9.*Kbulk - Eyoung)
-#Gshear0 = 100e-6
-    
-D = 1.e-2 #1.0e0                 # Diffusivity [L2T-1]
-RT = 8.3145e-3*(273.0+20.0)      # Gas constant*Temp [ML2T-2#-1]
-Farad = 96485.e-6                # Faraday constant [Q#-1]
-#L_debye = 0.01*scaleY # 6e-3 #12.0e-3 #600.0e-3
-
-# Initial concentrations
-Concentracao_positiva = 0.274                # Initial concentration [#L-3]
-concentracao_negativa = Concentracao_positiva                # Initial concentration [#L-3]
-concentracao_maxima = 10000*1e-9 #0.00001*1e-9 # 10000e0*1.e-9
-
-vareps0 = fem.Constant(8.85e-12*1e-6)
-vareps_num =  mat(materials, fem.Constant(1.0e4), fem.Constant(1.0), fem.Constant(1.0), degree=1)
-vareps_r = mat(materials, fem.Constant(80), fem.Constant(6.5), fem.Constant(6.5))
-vareps = vareps0*vareps_r*vareps_num
-#vareps = Constant(Farad*Farad*(cMax*(cPos0+cNeg0))/RT*L_debye*L_debye)
-
-
-# Mass density
-densidade_massa = fem.Constant(1e-9)  # 1e3 kg/m^3 = 1e-9 mg/um^3,
+class UserExpression():
+    pass
 
 # Rayleigh damping coefficients
 eta_m = fem.Constant(0.00000) # Constant(0.000005)
@@ -408,8 +121,6 @@ t3 = 2.5e6
 t4 = 52.5e6
 T2_tot = 30.0e6 #0.0001*1.e6 #t1+t2+t3+t4
 dt = T2_tot/500
-
-phi_norm = RT/Farad # "Thermal" Volt
 
 # Define function space, scalar
 U2 = ufl.VectorElement("Lagrange", domain.ufl_cell(), 1)
@@ -476,6 +187,12 @@ y = np.sort(np.array(domain.coordinates()[:,1])) #np.linspace(-scaleY/2, scaleY/
 #f = 2/0
 
 # Quick-calculate sub-routines
+carregamento= 50000
+E = 78e6
+poisson = 0.3
+lambda_ = E*poisson / ((1+poisson)*(1-2*poisson))
+G= E / 2*(1+poisson)
+
 
 
 def F_calc(u):
@@ -756,20 +473,7 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
         
         #
         _w_0,_w_1, _w_2, _w_3 = w_old.split()
-    """    
-    if (t >= T_tot+(spike+1)*T2_tot):
-        spike+=1
-    # variable time-stepping
-    #dt = 0.5 
-    if ((t-T_tot-spike*T2_tot) < (t1/10)):
-        dt = t1/500
-    #elif t-T_tot-spike*T2_tot < ((t1+t2)/100):
-    #    dt = t1/100
-    #elif t-T_tot-spike*T2_tot < ((t1+t2)/100)
-    else:
-        dt = t1/500 #T2_tot/500
-    """
-
+   
     dt = T2_tot/20
     
     
@@ -799,13 +503,7 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
     # Solver parameters
     
     prm = solver.parameters
-    prm['nonlinear_solver'] = 'newton'
-    prm['newton_solver']['linear_solver'] = 'petsc'   #'petsc'   #'gmres'
-    prm['newton_solver']['absolute_tolerance'] = 1.E-6    # 1.e-10
-    prm['newton_solver']['relative_tolerance'] = 1.E-6    # 1.e-10
-    prm['newton_solver']['maximum_iterations'] = 60
-    
-    
+
     # Solve the problem
     (iter, converged) = solver.solve()
     
@@ -844,63 +542,3 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
 
 
 
-
-
-
-
-
-# Final step paraview output
-file_results.write(u_v,t)
-file_results.write(omgPos_v, t)
-file_results.write(phi_v, t)
-file_results.write(omgNeg_v, t)
-file_results.write(Gshear_v,t)
-
-# output final measured device voltage
-phi_top = w(x_plot, scaleY/2, scaleZ/2)[4]*phi_norm
-phi_btm = w(x_plot,-scaleY/2., scaleZ/2)[4]*phi_norm
-disp_out[ii]    = w(scaleX, scaleY/2 - slope*scaleY, scaleZ/2)[0]
-#voltage_out[ii] = phi_top - phi_btm
-#charge_out[ii] = assemble(Farad*cMax*(cPos-cNeg)*dx(3))
-#time_out[ii]    = t
-
-
-font = {'size'   : 16}
-
-plt.rc('font', **font)
-
-prop_cycle = plt.rcParams['axes.prop_cycle']
-colors = prop_cycle.by_key()['color']
-
-# Experimental comparison
-expData = np.genfromtxt('pressure_cap_data.csv', delimiter=',')
-
-
-plt.figure()
-fig = plt.gcf()
-fig.set_size_inches(7.5,6)
-plt.scatter(expData[:,0], expData[:,1]/expData[0,1], s=100,
-                     edgecolors=(0.0, 0.0, 0.0,1),
-                     color=(1, 1, 1, 1),
-                     label='Experiment', linewidth=2.0)
-stretch_out = (scaleX + disp_out[np.where(time_out>=T_tot)])/scaleX
-#plt.plot(time_out[np.where(voltage_out!=0)], charge_out[np.where(voltage_out!=0)],linewidth=3.)
-C0 = (1e12)*np.array(charge_out[np.where(time_out==T_tot+T2_tot)])/np.array(voltage_out[np.where(time_out==T_tot+T2_tot)]-ocv_out[0])
-plt.plot(trac_out[np.where(time_out>=T_tot + T2_tot)]*1e9, (1e12)*np.array(charge_out[np.where(time_out>=T_tot+T2_tot)])/np.array(voltage_out[np.where(time_out>=T_tot + T2_tot)]-ocv_out[0])/C0,\
-         label='Simulation', linewidth=3.0, color='k')
-#plt.axvline(T2_tot/1e6, c='k', linewidth=1.)
-plt.xlim(0,40)
-plt.ylim(0.95,1.40)
-#plt.axis('tight')
-plt.xlabel(r"Pressure (kPa)")
-plt.ylabel(r"C$/$ C$_{{0}}$")
-#plt.grid(linestyle="--", linewidth=0.5, color='b')
-plt.legend()
-
-# save figure to file
-fig = plt.gcf()
-fig.set_size_inches(6, 5)
-plt.tight_layout()
-plt.savefig("plots/traction_capacitance.png", dpi=600)
-
-    

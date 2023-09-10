@@ -14,7 +14,7 @@ lambda_ =  PETSc.ScalarType(E*poisson / ((1+poisson)*(1-2*poisson)))
 G =  PETSc.ScalarType(E / (2 * (1 + poisson)))
 
 
-domain, cell_tags, facet_tags = gmshio.read_from_msh("malha_estruturada.msh", MPI.COMM_SELF,0, gdim=2)
+domain, cell_tags, facet_tags = gmshio.read_from_msh("malha_com_eletrodo_04.msh", MPI.COMM_SELF,0, gdim=2)
 
 #definindo o espaço de função:
 V = fem.VectorFunctionSpace(domain, ("CG", 1))
@@ -88,9 +88,9 @@ solver = nls.petsc.NewtonSolver(domain.comm, problem)
 
 # Set Newton solver options
 solver.convergence_criterion = "residual"
-solver.rtol = 1e-8
+solver.rtol = 1e-20
 solver.report = True
-solver.atol = 1e-12
+solver.atol = 1e-20
 
 """COnfigurações para o solver não linear  :
 #solver.solver_type = "gmres"

@@ -267,6 +267,8 @@ subdomain_2 = Omega_2()
 subdomain_3 = Omega_3()
 subdomain_4 = Omega_4()
 subdomain_5 = Omega_5()
+
+#marcando o indice de materials de 0 a 5
 subdomain_0.mark(materials, 0)
 subdomain_1.mark(materials, 1)
 subdomain_2.mark(materials, 2)
@@ -279,15 +281,15 @@ dx = Measure('dx', domain=mesh, subdomain_data=materials)
 """
 Userdefined expression for defining different materials
 """
-class mat(UserExpression): 
+class mat(UserExpression): #super classe UserExpression, no caso, o argumento kwargs empacota uma informação e envia para a superclass, para o problema em questao, acredito que kwarsg seja um nivel, um indice, que é visualizado por alguma funcao da class  UserExpression
     def __init__(self, materials, mat_0, mat_1, mat_2, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(**kwargs) # referencia de codigo https://stackoverflow.com/questions/41929715/what-does-this-to-in-python-super-init-kwargs
         self.materials = materials
         self.k_0 = mat_0
         self.k_1 = mat_1
         self.k_2 = mat_2
         
-    def eval_cell(self, values, x, cell):
+    def eval_cell(self, values, x, cell): 
         if self.materials[cell.index] == 0:
             values[0] = self.k_0
         elif self.materials[cell.index] == 1:
@@ -321,19 +323,23 @@ class integralIndex(UserExpression):
 
 intInd = integralIndex(materials, Constant(1.), Constant(0.), degree=0)
 
+
+"""class Mat, Ordem de entrada das constante dada pela ordem do material :  ionic hydrogel, dialetric, dialetric """
 # Material parameters    
 # M-mass; L-length; T-time; #-number of moles; Q-charge; K- temperature
 #Eyoung = mat(materials, Constant(500.e-6), Constant(500.e-6), Constant(500.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(2*200.e-6), Constant(3000.e-6), Constant(500.0e-6), degree=0)
 
-matInd = mat(materials, Constant(1.), Constant(0.), Constant(1.))
+matInd = mat(materials, Constant(1.), Constant(0.), Constant(1.)) #não sei 
 #Eyoung = mat(materials, Constant(200.e-6), Constant(0.1e-6), Constant(500.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*0.1e-6), Constant(30*500.0e-6), degree=0)
 #Gshear = mat(materials, Constant(67.e-6), Constant(0.034e-6), Constant(167.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(100.0*67.e-6), Constant(1000*0.034e-6), Constant(100.0*167.0e-6), degree=0)  
 Gshear = mat(materials, Constant(0.003e-6), Constant(0.034e-6), Constant(0.2e-6), degree=0)  
 Kbulk = mat(materials, Constant(2000*0.003e-6), Constant(2000*0.034e-6), Constant(2000.0*0.2e-6), degree=0)  
-Gshear0 = 100.0e-6 
+Gshear0 = 100.0e-6 # uso na formução fraca e no cconstrutor 
+
+
 Im_gent = mat(materials, Constant(300), Constant(90.0), Constant(90.0), degree=0)
 """
 matInd = mat(materials, Constant(1.), Constant(1.), Constant(1.))
@@ -343,18 +349,21 @@ Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*200.e-6), Constant(30*2
 #Gshear = 3.*Kbulk*Eyoung/(9.*Kbulk - Eyoung)
 #Gshear0 = 100e-6
     
+
 D = 1.e-2 #1.0e0                 # Diffusivity [L2T-1]
 RT = 8.3145e-3*(273.0+20.0)      # Gas constant*Temp [ML2T-2#-1]
 Farad = 96485.e-6                # Faraday constant [Q#-1]
 #L_debye = 0.01*scaleY # 6e-3 #12.0e-3 #600.0e-3
-# Initial concentrations
+
+""" Initial concentrations"""
 cPos0 = 0.274                # Initial concentration [#L-3]
 cNeg0 = cPos0                # Initial concentration [#L-3]
 cMax = 10000*1e-9 #0.00001*1e-9 # 10000e0*1.e-9
 
-vareps0 = Constant(8.85e-12*1e-6)
-vareps_num =  mat(materials, Constant(1.0e4), Constant(1.0), Constant(1.0), degree=1)
-vareps_r = mat(materials, Constant(80), Constant(6.5), Constant(6.5))
+"""Eletrical permittivity """
+vareps0 = Constant(8.85e-12*1e-6) # 
+vareps_num =  mat(materials, Constant(1.0e4), Constant(1.0), Constant(1.0), degree=1) #Permissividade do gel igual a 10000
+vareps_r = mat(materials, Constant(80), Constant(6.5), Constant(6.5)) # eletrical permittivity for material 
 vareps = vareps0*vareps_r*vareps_num
 #vareps = Constant(Farad*Farad*(cMax*(cPos0+cNeg0))/RT*L_debye*L_debye)
 
@@ -366,13 +375,13 @@ eta_m = Constant(0.00000) # Constant(0.000005)
 eta_k = Constant(0.00000) # Constant(0.000005)
 
 
-# Generalized-alpha method parameters
+""" Generalized-alpha method parameters """
 alpha = Constant(0.0)
 gamma   = Constant(0.5+alpha)
 beta    = Constant((gamma+0.5)**2/4.)
 
 
-#Simulation time related params (reminder: in microseconds)
+""" Simulation time related params (reminder: in microseconds)"""
 ttd  = 0.01
 # Step in time
 t = 0.0         # initialization of time
@@ -380,18 +389,20 @@ T_tot = 0e6*1.0e6 #200.0 #0.11        # total simulation time
 
 #
 
-t1 = 15.0e6
-t2 = 35.0e6
-t3 = 2.5e6
-t4 = 52.5e6
+t1 = 15.0e6 #sem uso 
+t2 = 35.0e6 #sem uso 
+t3 = 2.5e6 #sem uso 
+t4 = 52.5e6 #sem uso 
+
+
 T2_tot = 30.0e6 #0.0001*1.e6 #t1+t2+t3+t4
-dt = T2_tot/500
+dt = T2_tot/500 # incrementos de tempo 
 
 phi_norm = RT/Farad # "Thermal" Volt
 
 # Define function space, scalar
-U2 = VectorElement("Lagrange", mesh.ufl_cell(), 1)
-P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
+U2 = VectorElement("Lagrange", mesh.ufl_cell(), 1)  #Displacent
+P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1) #concentrações + - , electric potential 
 D0 = FiniteElement("DG", mesh.ufl_cell(), 0)
 D1 = FiniteElement("DG", mesh.ufl_cell(), 1)
 
@@ -406,7 +417,7 @@ W4 = FunctionSpace(mesh,D1)   # DG space for visualization later
 
 # Define test functions in weak form
 dw = TrialFunction(ME)                                   
-(u_test, omgPos_test, phi_test, omgNeg_test)  = TestFunctions(ME)    # Test function
+(u_test, omgPos_test, phi_test, omgNeg_test)  = TestFunctions(ME)    # Test function 
 
 # Define actual functions with the required DOFs
 w = Function(ME)
@@ -425,7 +436,8 @@ mu20 = ln(cNeg0)
 
 
 
-init_omgPos = Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cPos0)):std::log((cNum))', int2=int2, scaleY=scaleY, tol = tol, cPos0 = cPos0, cNum=DOLFIN_EPS, degree=0)
+"""Não sei a finalidade, mas a interpretação do argumento de fem.Expression() é dado por : https://comet-fenics.readthedocs.io/en/latest/demo/elastodynamics/demo_elastodynamics.py.html"""
+init_omgPos = fem.Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cPos0)):std::log((cNum))', int2=int2 scaleY=scaleY, tol = tol, cPos0 = cPos0, cNum=DOLFIN_EPS, degree=0)
 omgPos_init = interpolate(init_omgPos,ME.sub(1).collapse())
 assign(w_old.sub(1),omgPos_init)
 
@@ -439,6 +451,8 @@ assign(w.sub(3),omgNeg_init)
 assign(w.sub(1),omgPos_init)
 #assign(w.sub(5),cNeg_init)
 #assign(w.sub(2),cPos_init)
+
+
 
 cPos     = exp(omgPos - Farad*phi*phi_norm/RT)
 cNeg     = exp(omgNeg + Farad*phi*phi_norm/RT)
@@ -486,7 +500,7 @@ dk = Constant(0.0)
 
 # Update formula for acceleration
 # a = 1/(2*beta)*((u - u0 - v0*dt)/(0.5*dt*dt) - (1-2*beta)*a0)
-def update_a(u, u_old, v_old, a_old, ufl=True):
+def update_aceleration(u, u_old, v_old, a_old, ufl=True):
     if ufl:
         dt_ = dk
         beta_ = beta
@@ -497,7 +511,7 @@ def update_a(u, u_old, v_old, a_old, ufl=True):
 
 # Update formula for velocity
 # v = dt * ((1-gamma)*a0 + gamma*a) + v0
-def update_v(a, u_old, v_old, a_old, ufl=True):
+def update_velocity(a, u_old, v_old, a_old, ufl=True):
     if ufl:
         dt_ = dk
         gamma_ = gamma
@@ -514,8 +528,8 @@ def update_fields(u_proj, u_proj_old, v_old, a_old):
     v0_vec, a0_vec = v_old.vector(), a_old.vector()
 
     # use update functions using vector arguments
-    a_vec = update_a(u_vec, u0_vec, v0_vec, a0_vec, ufl=False)
-    v_vec = update_v(a_vec, u0_vec, v0_vec, a0_vec, ufl=False)
+    a_vec = update_aceleration(u_vec, u0_vec, v0_vec, a0_vec, ufl=False)
+    v_vec = update_velocity(a_vec, u0_vec, v0_vec, a0_vec, ufl=False)
 
     # Update (u_old <- u)
     v_old.vector()[:], a_old.vector()[:] = v_vec, a_vec
@@ -524,7 +538,8 @@ def update_fields(u_proj, u_proj_old, v_old, a_old):
 def ppos(x):
     return (x+abs(x))/2.
 
-def avg(x_old, x_new, alpha):
+
+def avg(x_old, x_new, alpha):  #atualização dos campos de velocidade e deslocamento
     return alpha*x_old + (1-alpha)*x_new
 
 '''''''''''''''''''''''''''''''''''''''''
@@ -532,8 +547,8 @@ def avg(x_old, x_new, alpha):
 '''''''''''''''''''''''''''''''''''''''''
 
 # Newmark-beta kinematical update
-a_new = update_a(u, u_old, v_old, a_old, ufl=True)
-v_new = update_v(a_new, u_old, v_old, a_old, ufl=True)
+a_new = update_aceleration(u, u_old, v_old, a_old, ufl=True)
+v_new = update_velocity(a_new, u_old, v_old, a_old, ufl=True)
 
 # get avg fields for generalized-alpha method
 u_avg = avg(u_old, u, alpha)
@@ -548,7 +563,7 @@ cNeg     = exp(omgNeg_avg + phi_avg)
 cPos_old = exp(omgPos_old - phi_old)
 cNeg_old = exp(omgNeg_old + phi_old)
 
-
+"""Construindo os tensores de deformação F com os valores de u_avg= , u_old= antigo"""
 # Kinematics
 F = F_calc(u_avg)
 C = F.T*F
@@ -562,7 +577,7 @@ J_old = det(F_old)
        WEAK FORMS
 '''''''''''''''''''''''
 
-dynSwitch = Constant(1.0)
+dynSwitch = Constant(1.0) 
      
 L0 = inner(Piola(F_calc(u_avg), phi_avg), grad(u_test))*dx \
          + dynSwitch*rho*inner(a_new, u_test)*dx 
@@ -589,12 +604,12 @@ a = derivative(L, w, dw)
 
 # Boundary condition expressions as necessary
 
-disp = Expression(("0.5*t/Tramp"),
+disp = fem.Expression(("0.5*t/Tramp"),
                   Tramp = T2_tot-T_tot, t = 0.0, degree=1)
-disp2 = Expression(("-0.5*t/Tramp"),
+disp2 = fem.Expression(("-0.5*t/Tramp"),
                   Tramp = T2_tot-T_tot, t = 0.0, degree=1)
 
-phiRamp = Expression(("(250/phi_norm)*t/Tramp"),
+phiRamp = fem.Expression(("(250/phi_norm)*t/Tramp"),
                   phi_norm = phi_norm, Tramp = T_tot, t = 0.0, degree=1)
 
 # Boundary condition definitions
@@ -614,6 +629,7 @@ phi_eq = w_old(x_plot, scaleY/2, scaleZ/2)[4]
 #                 phi_eq=phi_eq, phi_norm = phi_norm, pi=np.pi, f=100,  Tramp = T2_tot, t = 0.0, degree=1)
 phiRamp = Expression(("min(1.0e3/phi_norm*(t/Tramp), 1.0e3/phi_norm)"),
                  phi_eq=phi_eq, phi_norm = phi_norm, pi=np.pi, Tramp = T2_tot, t = 0.0, degree=2)
+
 disp = Expression(("5.5*scaleX*t/Tramp"),
                   scaleX = scaleX, Tramp = T2_tot, t = 0.0, degree=1)\
     
@@ -635,7 +651,7 @@ bcs_b4 = DirichletBC(ME.sub(0).sub(2),0.0,facets,5)
 bcs2 = [bcs_3, bcs_a, bcs_b1, bcs_b3, bcs_b4, bcs_f]
 
 
-# Output file setup
+""" Output file setup"""
 file_results = XDMFFile("results/suo_capacitor_3D_traction.xdmf")
 file_results.parameters["flush_output"] = True
 file_results.parameters["functions_share_mesh"] = True
@@ -764,6 +780,7 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
     trac_out[jj] = trac_value
        
     Ltrac = -dot(trac/Gshear0, u_test)*ds(9) # + dot(trac/Gshear0, u_test)*ds(3)
+
     # Set up the non-linear problem (free swell)
     StressProblem = NonlinearVariationalProblem(L+Ltrac, w, bcs2, J=a)
     

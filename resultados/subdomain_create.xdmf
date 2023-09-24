@@ -6,17 +6,17 @@
       <Topology TopologyType="Quadrilateral" NumberOfElements="30396" NodesPerElement="4">
         <DataItem Dimensions="30396 4" NumberType="Int" Format="HDF">subdomain_create.h5:/Mesh/mesh/topology</DataItem>
       </Topology>
-      <Geometry GeometryType="XYZ">
-        <DataItem Dimensions="30750 3" Format="HDF">subdomain_create.h5:/Mesh/mesh/geometry</DataItem>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="30750 2" Format="HDF">subdomain_create.h5:/Mesh/mesh/geometry</DataItem>
       </Geometry>
     </Grid>
     <Grid Name="Facet tags" GridType="Uniform">
       <xi:include xpointer="xpointer(/Xdmf/Domain/Grid/Geometry)" />
-      <Topology TopologyType="PolyLine" NumberOfElements="408" NodesPerElement="2">
-        <DataItem Dimensions="408 2" NumberType="Int" Format="HDF">subdomain_create.h5:/MeshTags/Facet tags/topology</DataItem>
+      <Topology TopologyType="PolyLine" NumberOfElements="1004" NodesPerElement="2">
+        <DataItem Dimensions="1004 2" NumberType="Int" Format="HDF">subdomain_create.h5:/MeshTags/Facet tags/topology</DataItem>
       </Topology>
       <Attribute Name="Facet tags" AttributeType="Scalar" Center="Cell">
-        <DataItem Dimensions="408 1" Format="HDF">subdomain_create.h5:/MeshTags/Facet tags/Values</DataItem>
+        <DataItem Dimensions="1004 1" Format="HDF">subdomain_create.h5:/MeshTags/Facet tags/Values</DataItem>
       </Attribute>
     </Grid>
     <Grid Name="Cell tags" GridType="Uniform">
@@ -28,12 +28,12 @@
         <DataItem Dimensions="30396 1" Format="HDF">subdomain_create.h5:/MeshTags/Cell tags/Values</DataItem>
       </Attribute>
     </Grid>
-    <Grid Name="f" GridType="Collection" CollectionType="Temporal">
-      <Grid Name="f" GridType="Uniform">
+    <Grid Name="deslocamento" GridType="Collection" CollectionType="Temporal">
+      <Grid Name="deslocamento" GridType="Uniform">
         <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@GridType='Uniform'][1]/*[self::Topology or self::Geometry])" />
         <Time Value="0" />
-        <Attribute Name="f" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="30750 1" Format="HDF">subdomain_create.h5:/Function/f/0</DataItem>
+        <Attribute Name="deslocamento" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="30750 1" Format="HDF">subdomain_create.h5:/Function/deslocamento/0</DataItem>
         </Attribute>
       </Grid>
     </Grid>

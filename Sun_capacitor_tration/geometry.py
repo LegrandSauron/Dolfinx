@@ -86,6 +86,7 @@ preMapLength = float(int1 + 2*M2*(int1/M1))
 domain =mesh.create_box(MPI.COMM_WORLD,[(0.,-preMapLength, 0.0),(scaleX, preMapLength, scaleZ)],[xElem,N, zElem])
 
 from dolfinx.io import XDMFFile
-with XDMFFile(domain.comm, "dolfinx_version.xdmf", "w") as xdmf:
+with XDMFFile(domain.comm, "resultados/dolfinx_version.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
-  
+
+

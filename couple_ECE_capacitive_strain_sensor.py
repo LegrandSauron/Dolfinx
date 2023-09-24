@@ -276,8 +276,8 @@ class Omega_5(x):
     def inside(self, x, on_boundary):
         return (x[1]<= -scaleY/2  )
   
-fdim = domain, domain.topology.dim
-materials = MeshFunction("size_t", fdim, 0)
+fdim = domain, domain.topology.dim #3
+materials = MeshFunction("size_t", fdim, 0) 
 subdomain_0 = Omega_0()
 subdomain_1 = Omega_1()
 subdomain_2 = Omega_2()
@@ -345,6 +345,7 @@ intInd = integralIndex(materials, fem.Constant(1.), fem.Constant(0.), degree=0)
 #Eyoung = mat(materials, Constant(500.e-6), Constant(500.e-6), Constant(500.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(2*200.e-6), Constant(3000.e-6), Constant(500.0e-6), degree=0)
 
+
 matInd = mat(materials, fem.Constant(1.), fem.Constant(0.), fem.Constant(1.))
 #Eyoung = mat(materials, Constant(200.e-6), Constant(0.1e-6), Constant(500.0e-6), degree=0)  
 #Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*0.1e-6), Constant(30*500.0e-6), degree=0)
@@ -361,7 +362,8 @@ Kbulk = mat(materials, Constant(30*200.e-6), Constant(30*200.e-6), Constant(30*2
 """
 #Gshear = 3.*Kbulk*Eyoung/(9.*Kbulk - Eyoung)
 #Gshear0 = 100e-6
-    
+
+
 D = 1.e-2 #1.0e0                 # Diffusivity [L2T-1]
 RT = 8.3145e-3*(273.0+20.0)      # Gas constant*Temp [ML2T-2#-1]
 Farad = 96485.e-6                # Faraday constant [Q#-1]
@@ -520,6 +522,7 @@ def update_a(u, u_old, v_old, a_old, ufl=True):
         dt_ = float(dk)
         beta_ = float(beta)
     return (u-u_old-dt_*v_old)/beta_/dt_**2 - (1-2*beta_)/2/beta_*a_old
+
 
 
 # Update formula for velocity
@@ -823,7 +826,7 @@ while (round(t,2) <= round(T_tot + 2.0*T2_tot,2)):
     charge_out[ii] = assemble(Farad*concentracao_maxima*(cPos-cNeg)*dx(3))
     
     
-    u_proj = project(u, W2)
+    u_proj = project(u, W2) #solucao : https://fenicsproject.discourse.group/t/where-to-find-project-function-in-dolfinx/9829
     u_proj_old = project(u_old, W2)
     update_fields(u_proj, u_proj_old, v_old, a_old)
     w_old.vector()[:] = w.vector()
@@ -904,3 +907,4 @@ plt.tight_layout()
 plt.savefig("plots/traction_capacitance.png", dpi=600)
 
     
+

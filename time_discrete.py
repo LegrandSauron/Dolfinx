@@ -14,7 +14,7 @@ Find u∈V such that m(u¨,v)+c(u˙,v)+k(u,v)=L(v)for all v∈V
 prefixos:
 
 new = n+1 : deslocamento, velocidade referente ao tempo tn+1
-n : reference ao deslocamento, velocidade referente ao tempo tn
+n : referente ao deslocamento, velocidade referente ao tempo tn
 """
 
 
@@ -25,7 +25,7 @@ Beta= 1
 Alpha= 1
 
 # Considerações a respeito do tempo :
-T = [0, 500] # Intervalo de tempo total
+T =  500 # Intervalo de tempo total
 t_n = 0 # Tempo atual 
 t_new = 0 # Tempo posterior 
 Steps_tempo = 1000  # 
@@ -33,17 +33,22 @@ incremento = T/Steps_tempo
 
 Delta_T =  t_new + t_n  # Intervalo de tempo 
 
+t_zero=0
+t_atual= 0
 
 
-"""Solução em u_new""" 
+def T_t(T_new,T_old, dt):
+    return (T_new - T_old)/dt
 
-u_n = "Deslocamento "
-v_n = "Velocidade"
-a_n = "Aceleração"
+def Atualizando_T(T_new, T_old):
+    T_old = T_new
+    return T_old
 
 
+for i in range(Steps_tempo):
+    t_n += incremento
+    print(t_n)
+    
+    T_t()
 
-def u_new(u_n, v_n, a_n,a_new):
-    return u_n + Delta_T*v_n + ((Delta_T**2)/2)*((1- 2*Beta)*a_n + 2*Beta*a_new)
-
-Velocity_new =  32
+    

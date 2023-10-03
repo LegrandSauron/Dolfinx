@@ -1,6 +1,6 @@
 import numpy as np
 import ufl
-
+from dolfinx.io import XDMFFile
 from petsc4py import PETSc
 from mpi4py import MPI
 from dolfinx import fem, mesh, plot
@@ -98,38 +98,14 @@ solver.convergence_criterion = "incremental"
 
 
 
-import pyvista
-import matplotlib.pyplot as plt
-pyvista.start_xvfb()
-plotter = pyvista.Plotter()
-plotter.open_gif("deformation.gif", fps=3)
-
-topology, cells, geometry = plot.create_vtk_mesh(u.function_space)
-function_grid = pyvista.UnstructuredGrid(topology, cells, geometry)
-
-values = np.zeros((geometry.shape[0], 3))
-values[:, :len(u)] = u.x.array.reshape(geometry.shape[0], len(u))
-function_grid["u"] = values
-function_grid.set_active_vectors("u")
-
-# Warp mesh by deformation
-warped = function_grid.warp_by_vector("u", factor=1)
-warped.set_active_vectors("u")
-
-# Add mesh to plotter and visualize
-actor = plotter.add_mesh(warped, show_edges=True, lighting=False, clim=[0, 10])
-
-# Compute magnitude of displacement to visualize in GIF
-Vs = fem.FunctionSpace(domain, ("Lagrange", 2))
-magnitude = fem.Function(Vs)
-us = fem.Expression(ufl.sqrt(sum([u[i]**2 for i in range(len(u))])), Vs.element.interpolation_points())
-magnitude.interpolate(us)
-warped["mag"] = magnitude.x.array
-
-
 
 from dolfinx import log
 log.set_log_level(log.LogLevel.INFO)
+
+
+file = XDMFFile(MPI.COMM_WORLD, "resultados/hiperelasticity.xdmf", "w")
+file.write_mesh(domain)
+
 tval0 = -1.5
 for n in range(1, 10):
     T.value[2] = n * tval0
@@ -137,12 +113,5 @@ for n in range(1, 10):
     assert(converged)
     u.x.scatter_forward()
     print(f"Time step {n}, Number of iterations {num_its}, Load {T.value}")
-    function_grid["u"][:, :len(u)] = u.x.array.reshape(geometry.shape[0], len(u))
-    magnitude.interpolate(us)
-    warped.set_active_scalars("mag")
-    warped_n = function_grid.warp_by_vector(factor=1)
-    plotter.update_coordinates(warped_n.points.copy(), render=False)
-    plotter.update_scalar_bar_range([0, 10])
-    plotter.update_scalars(magnitude.x.array)
-    plotter.write_frame()
-plotter.close()
+    file.write_function(u, T)
+   

@@ -11,7 +11,7 @@ import numpy as np
 from petsc4py import PETSc 
 from petsc4py.PETSc import*
 import petsc4py
-
+from dolfinx. io import gmshio
 # Scaled variable
 carregamento= 5000
 E = 78e6

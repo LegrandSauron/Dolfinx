@@ -518,7 +518,7 @@ def update_velocity(a, u_old, v_old, a_old, ufl=True):
     else:
         dt_ = float(dk)
         gamma_ = float(gamma)
-    return v_old + dt_*((1-gamma_)*a_old + gamma_*a)
+    return v_old + dt_*((1-gamma_)*a_old + gamma_*a),
 
 def update_fields(u_proj, u_proj_old, v_old, a_old):
     """Update fields at the end of each time step."""

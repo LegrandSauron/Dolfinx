@@ -1,5 +1,3 @@
-from dolfinx import fem
-import dolfinx
 import ufl
 from ufl import ds, dx, grad, inner, dot
 from petsc4py.PETSc import ScalarType
@@ -13,7 +11,7 @@ import petsc4py
 
 
 # Scaled variable
-carregamento= 50000
+carregamento= 70000
 E = 78e6
 poisson = 0.3
 lambda_ = E*poisson / ((1+poisson)*(1-2*poisson))

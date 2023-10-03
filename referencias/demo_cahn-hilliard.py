@@ -320,6 +320,7 @@ while (t < T):
     print(f"Step {int(t/dt)}: num iterations: {r[0]}")
     u0.x.array[:] = u.x.array
     file.write_function(c, t)
+    
 
     # Update the plot window
     if have_pyvista:

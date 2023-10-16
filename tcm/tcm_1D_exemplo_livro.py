@@ -8,11 +8,11 @@ from petsc4py import PETSc
 from petsc4py.PETSc import*
 
 # Scaled variable
-L_comprimento = 4.0
+L_comprimento = 0.5
 A      = 0.1
-T_init = 0.0
-k      = 2.0
-
+T_init = 30.0
+k      = .005
+T_last = 0.0
 
 
 dominio= mesh.create_interval(MPI.COMM_WORLD,20,np.array([0,L_comprimento]) )
@@ -54,17 +54,20 @@ dominio.topology.create_connectivity(fdim, tdim)
 esquerda_contorno_gdl 	  	= fem.locate_dofs_topological(V, fdim, facet_tag.find(1))
 uD_bc_esquerda				= fem.dirichletbc(ScalarType(T_init), esquerda_contorno_gdl, V)
 
+right_contorno = fem.locate_dofs_topological(V,fdim,facet_tag.find(2))
+ud_right= fem.dirichletbc(ScalarType(T_last),right_contorno,V)
 
+bc= [uD_bc_esquerda,ud_right]
 #Defining the body force term
-s     = fem.Constant(dominio, ScalarType(5.0))
-q = fem.Constant(dominio, ScalarType(-5.0))
+s     = fem.Constant(dominio, ScalarType(0.0))
+q = fem.Constant(dominio, ScalarType(0.0))
 
 #Forma variacional
 a     = ufl.inner(ufl.grad(u),ufl.grad(v))*k*A*ufl.dx
 L     = ufl.inner(q,v)*k*A*ds(2) + ufl.inner(s,v)*ufl.dx
 
 # Solve the linear system
-problem = fem.petsc.LinearProblem(a, L, bcs = [uD_bc_esquerda], petsc_options={"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"})
+problem = fem.petsc.LinearProblem(a, L, bcs = bc, petsc_options={"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"})
 uh 	  = problem.solve()
 
 

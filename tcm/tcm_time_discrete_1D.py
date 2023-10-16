@@ -5,16 +5,15 @@ from dolfinx import fem, mesh, plot
 from mpi4py import MPI
 import numpy as np
 from petsc4py import PETSc 
-from petsc4py.PETSc import*
-L_comprimento = 0.5
-dominio= mesh.create_interval(MPI.COMM_WORLD,300,np.array([0,L_comprimento]) )
+L_comprimento = 0.1
+dominio= mesh.create_interval(MPI.COMM_WORLD,30,np.array([0,L_comprimento]) )
 x = ufl.SpatialCoordinate(dominio)
 
 # Scaled variable
 
-Temp_init = 300
-k      = .05
-T_last =25.0
+Temp_init = 30
+k      = .005
+T_last =0.0
 
 #time parameters
 t_init= 0.0
@@ -68,12 +67,12 @@ uD_bc_esquerda				= fem.dirichletbc(ScalarType(Temp_init), esquerda_contorno_gdl
 direita_ = fem.locate_dofs_topological(V,fdim,facet_tag.find(2))
 ud_direita = fem.dirichletbc(ScalarType(T_last), direita_, V)
 
-bc= [ud_direita]
+bc= [ud_direita,uD_bc_esquerda]
 
 
 #Salvando os dados 
 from dolfinx.io import XDMFFile
-with XDMFFile(dominio.comm, "resultados/acoplamento.xdmf", "w") as xdmf:
+with XDMFFile(dominio.comm, "resultados/tcm_time_discrete_1D.xdmf", "w") as xdmf:
     xdmf.write_mesh(dominio)
     
     
@@ -96,8 +95,7 @@ for i in range(steps):
     
     
     u_init.interpolate(uh)
-    
     xdmf.write_function(uh,t_init)
 
-
+print(x.shape)
 

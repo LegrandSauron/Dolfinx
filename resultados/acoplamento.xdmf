@@ -14,7 +14,7 @@
       <Grid Name="f" GridType="Uniform">
         <xi:include xpointer="xpointer(/Xdmf/Domain/Grid[@GridType='Uniform'][1]/*[self::Topology or self::Geometry])" />
         <Time Value="0" />
-        <Attribute Name="f" AttributeType="Scalar" Center="Node">
+        <Attribute Name="f" AttributeType="Vector" Center="Node">
           <DataItem Dimensions="21 1" Format="HDF">acoplamento.h5:/Function/f/0</DataItem>
         </Attribute>
       </Grid>

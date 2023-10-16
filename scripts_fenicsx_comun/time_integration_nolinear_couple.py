@@ -108,4 +108,5 @@ while (t < (T-tol)):
 
     if t < (T-tol): #To keep u0 in last step
         u.vector.copy(result=u0.vector)
-    file.write_function(u.sub(0), t)
+    file.write_function(u.sub(1), t)
+

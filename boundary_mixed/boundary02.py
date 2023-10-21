@@ -10,7 +10,7 @@ from petsc4py.PETSc import ScalarType
 
 L= 4
 domain = mesh.create_rectangle(MPI.COMM_WORLD, [np.array([0,0]), np.array([L,1])],
-                  [20,20], cell_type=mesh.CellType.triangle)
+                  [200,200], cell_type=mesh.CellType.triangle)
 
 """parametros"""
 T0 = fem.Constant(domain,293.)
@@ -60,10 +60,6 @@ U_ = ufl.TestFunction(V)
 DU = ufl.TrialFunction(V)
 (u, T) = ufl.split(DU)
 
-
-
-
-
 """Implemetando condições de contorno"""
 V0, submap0 = V.sub(0).collapse()
 V1,submap1= V.sub(1).collapse()
@@ -74,35 +70,30 @@ u_D0.x.array[:] = 0.0
 u_D1 = fem.Function(V1)
 u_D1.x.array[:] = 300.0
 
-
+#Engastes
 boundary_dofs_b0 = fem.locate_dofs_topological((V.sub(0), V0), fdim, facet_tag.find(1))
 bc0 = fem.dirichletbc(u_D0, boundary_dofs_b0, V.sub(0))
-
-
 boundary_dofs_b3 = fem.locate_dofs_topological((V.sub(0), V0), fdim, facet_tag.find(2))
 bc3 = fem.dirichletbc(u_D0, boundary_dofs_b3, V.sub(0))
 
-
-
+#Temperaturas 
 boundary_dofs_b1 = fem.locate_dofs_topological((V.sub(1), V1), fdim, facet_tag.find(1))
 bc1 = fem.dirichletbc(u_D1, boundary_dofs_b1, V.sub(1))
-
 boundary_dofs_b2 = fem.locate_dofs_topological((V.sub(1), V1), fdim, facet_tag.find(2))
 bc2 = fem.dirichletbc(u_D0, boundary_dofs_b2, V.sub(1))
-
 
 bc= [bc0,bc1,bc2]
 
 
-
+"""Tensores """
 def eps(v):
     return ufl.sym(ufl.grad(v))
-
 
 def sigma(v, Theta):
     return (lmbda*ufl.tr(eps(v)) - kappa*Theta)*ufl.Identity(2) + 2*mu*eps(v)
 
-s     = fem.Constant(domain, ScalarType(0.0))
+"""Funções da formulação """
+s = fem.Constant(domain, ScalarType(0.0))
 q = fem.Constant(domain, ScalarType(0.0))
 
 ds = ufl.Measure("ds", domain=domain, subdomain_data=facet_tag)
@@ -118,16 +109,15 @@ form = mech_form + therm_form
 problem = fem.petsc.LinearProblem(ufl.lhs(form), ufl.rhs(form),bc, petsc_options={"ksp_type": "preonly", "pc_type": "lu", "pc_factor_mat_solver_type": "mumps"})
 
 uh = problem.solve()
-
-sigma_h, u_h = uh.sub(0).collapse(), uh.sub(1).collapse()
-
+u_f, T_f = uh.sub(0).collapse(), uh.sub(1).collapse()
 
 
+u_f.name= "deslocamentos"
+T_f.name= "temperatura"
 from dolfinx.io import XDMFFile
 with XDMFFile(domain.comm, "resultados/acopla.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
-    xdmf.write_function(sigma_h)
-
+    xdmf.write_function(u_f)
 
     
 

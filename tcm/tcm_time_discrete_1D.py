@@ -6,19 +6,19 @@ from mpi4py import MPI
 import numpy as np
 from petsc4py import PETSc 
 L_comprimento = 0.1
-dominio= mesh.create_interval(MPI.COMM_WORLD,30,np.array([0,L_comprimento]) )
+dominio= mesh.create_interval(MPI.COMM_WORLD,300,np.array([0,L_comprimento]) )
 x = ufl.SpatialCoordinate(dominio)
 
 # Scaled variable
 
 Temp_init = 30
-k      = .005
+k      = .00005
 T_last =0.0
 
 #time parameters
-t_init= 0.0
-steps=100
-Tempo_final= 1
+t_init= fem.Constant(dominio,0.0)
+steps=200
+Tempo_final= 1.
 dt= fem.Constant(dominio,Tempo_final/steps)
 
 #definindo o espaço de funções 
@@ -92,10 +92,8 @@ problem = fem.petsc.LinearProblem(a, L, bcs = bc, petsc_options={"ksp_type": "pr
 for i in range(steps):
     t_init += dt
     uh 	  = problem.solve()
-    
-    
     u_init.interpolate(uh)
     xdmf.write_function(uh,t_init)
 
-print(x.shape)
+
 

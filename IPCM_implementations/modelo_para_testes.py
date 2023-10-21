@@ -214,6 +214,7 @@ dw = ufl.TrialFunction(ME)
 w = fem.Function(ME)
 (u, omgPos, phi, omgNeg) = ufl.split(w)  # current DOFs
 
+
 # A copy of functions to store values in last step for time-stepping.
 w_old = fem.Function(ME)
 (u_old, omgPos_old, phi_old, omgNeg_old) = ufl.split(w_old)  # old DOFs

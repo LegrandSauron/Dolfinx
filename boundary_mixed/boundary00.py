@@ -1,5 +1,6 @@
 from mpi4py import MPI
 from dolfinx import fem, io, nls, log, mesh, plot
+from dolfinx import*
 import numpy as np
 import ufl
 from petsc4py.PETSc import ScalarType
@@ -154,4 +155,4 @@ for (i, dti) in enumerate(np.diff(t)):
     uh = problem.solve()
     Uold.sub(1).interpolate(uh.sub(1))
     xdmf.write_function(Uold.sub(1),dt)
-    
+

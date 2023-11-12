@@ -627,6 +627,7 @@ x_plot = scaleX
 phi_eq = w_old(x_plot, scaleY/2, scaleZ/2)[4]
 #phiRamp = Expression(("phi_eq + 2.0e3/phi_norm*(1-exp(-10*t/Tramp)) + 1.e3/phi_norm*sin(2*pi*f*t/1e6)"),
 #                 phi_eq=phi_eq, phi_norm = phi_norm, pi=np.pi, f=100,  Tramp = T2_tot, t = 0.0, degree=1)
+
 phiRamp = Expression(("min(1.0e3/phi_norm*(t/Tramp), 1.0e3/phi_norm)"),
                  phi_eq=phi_eq, phi_norm = phi_norm, pi=np.pi, Tramp = T2_tot, t = 0.0, degree=2)
 

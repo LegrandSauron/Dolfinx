@@ -73,8 +73,8 @@ W = TrialFunction(V)
 (du, dTheta) = split(W)
 
 Wold = fem.Function(V)
-Wold.x.array[map_i[1]]= 0.0
-Wold.x.array[map_i[0]]= 0.0
+Wold.x.array[map_i[1]]= 0.0 #Errado?
+Wold.x.array[map_i[0]]= 0.0 #errado ?
 
 (uold, Thetaold) = Wold.sub(0), Wold.sub(1)
 
@@ -138,7 +138,7 @@ with XDMFFile(domain.comm, "resultados/tcm_2D.xdmf", "w") as xdmf:
 for i in range(steps):
     tempo_init += dt
     uh= problem.solve()
-    xdmf.write_function(uh.sub(0),tempo_init)
+    xdmf.write_function(uh.sub(1),tempo_init)
     a= uh.sub(1)
-    Thetaold.x.array[:]= a.x.array
+    Thetaold.x.array[:]= a.x.array    
     

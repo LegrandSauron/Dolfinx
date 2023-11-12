@@ -228,6 +228,27 @@ mu20 = ufl.ln(cNeg0)
 
 
 """Ate aqui, tudo ok """
+"""Não sei a finalidade, mas a interpretação do argumento de fem.Expression() é dado por : https://comet-fenics.readthedocs.io/en/latest/demo/elastodynamics/demo_elastodynamics.py.html"""
+
+init_omgPos = fem.Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cPos0)):std::log((cNum))', int2=int2 scaleY=scaleY, tol = tol, cPos0 = cPos0, cNum=DOLFIN_EPS, degree=0)
+
+omgPos_init = interpolate(init_omgPos,ME.sub(1).collapse())
+#assign(w_old.sub(1),omgPos_init)
+w_old.sub(1).x.array[:]= omgPos_init.x.array 
+
+
+init_omgNeg = Expression('abs(x[1])>=int2-tol && abs(x[1])<=scaleY/2+tol?std::log((cNeg0)):std::log((cNum))', int2=int2, scaleY=scaleY, tol = tol, cNeg0 = cNeg0,  cNum=DOLFIN_EPS, degree=0)
+omgNeg_init = interpolate(init_omgNeg,ME.sub(3).collapse())
+assign(w_old.sub(3),omgNeg_init)
+
+# Update initial guess for w
+assign(w.sub(3),omgNeg_init)
+assign(w.sub(1),omgPos_init)
+#assign(w.sub(5),cNeg_init)
+#assign(w.sub(2),cPos_init)
+
+
+
 
 cPos = ufl.exp(omgPos - Farad * phi * phi_norm / RT)
 cNeg = ufl.exp(omgNeg + Farad * phi * phi_norm / RT)

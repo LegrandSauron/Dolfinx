@@ -78,7 +78,7 @@ B_expr = fem.Expression(ufl.as_vector((A_z.dx(1), -A_z.dx(0))), W.element.interp
 B.interpolate(B_expr)
 
 from dolfinx.io import XDMFFile
-with XDMFFile(domain.comm, "malha001.xdmf", "w") as xdmf:
+with XDMFFile(domain.comm, "malhas/malha001.xdmf", "w") as xdmf:
     xdmf.write_mesh(domain)
     xdmf.write_meshtags(facet_tags)
     xdmf.write_meshtags(ct)

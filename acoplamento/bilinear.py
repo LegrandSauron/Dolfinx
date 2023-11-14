@@ -152,6 +152,7 @@ opts[f"{option_prefix}pc_type"] = "lu"
 opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
 ksp.setFromOptions()
 
+log.set_log_level(log.LogLevel.INFO)
 
 from dolfinx import log
 
@@ -163,4 +164,3 @@ for i in range(steps):
     
     xdmf.write_function(T_init,t_init)
     
-    log.set_log_level(log.LogLevel.INFO)

@@ -9,7 +9,7 @@ import ufl
 from dolfinx.io import gmshio
 from petsc4py import PETSc
 
-domain, cell_tags, facet_tags = gmshio.read_from_msh("capacitormalha.msh", MPI.COMM_WORLD,0, gdim=2)
+domain, cell_tags, facet_tags = gmshio.read_from_msh("capacitor_versao6.msh", MPI.COMM_WORLD,0, gdim=2)
 
 """Function Space"""
 # Define function space, scalar
@@ -34,25 +34,15 @@ for i in range(num_subs):
 
 """Aplicando as propriedades dos materiais"""
 """
-1 14 "eletrodo_superior_l"
-1 15 "gel_superior_l"
-1 16 "gel_inferior_l"
-1 17 "eletrodo_inferior_l"
 
-1 18 "eletrodo_inferior_r"
-1 19 "gel_inferior_r"
-1 20 "gel_superior_r"
-1 21 "eletrodo_superior_r"
-
-1 29 "eletrodo_sup_cima"
-1 30 "eletrodo_inf_baixo"
-
-2 26 "eletrodo_superior"
-2 27 "eletrodo_inferior"
-2 28 "gel"
-
-1 29 "voltagem"
-1 30 "aterramento"
+1 20 "Voltagem"
+1 21 "Aterramento"
+1 22 "Engaste_esquerda"
+1 23 "Engaste_direita"
+2 24 "Hidrogel_superior"
+2 25 "Hidrogel_inferior"
+2 26 "elastomero"
+2 27 "dominio"
 """
 
 
@@ -73,9 +63,9 @@ def mat_features(function_descontinuo, material, constanste):
 """ Implementação das propriedades em cada regiao"""
 Q = fem.FunctionSpace(domain, D0)
 
-hidrogel_sup = tag(26)
-hidrogel_inf = tag(27)
-elastomero = tag(28)
+hidrogel_sup = tag(24)
+hidrogel_inf = tag(25)
+elastomero = tag(26)
 
 # A ordem de entrada das propriedades na lista deve ser equivalente ao espaço no qual o material ocupa dentro do dominio
 material_ = [elastomero, hidrogel_inf, hidrogel_sup]
@@ -187,26 +177,7 @@ def fixed_displacement_expression(x):
 fixed_displacement = fem.Function(spaces[0])
 fixed_displacement.interpolate(fixed_displacement_expression)
 
-"""
-1 14 "eletrodo_superior_l"
-1 15 "gel_superior_l"
-1 16 "gel_inferior_l"
-1 17 "eletrodo_inferior_l"
 
-1 18 "eletrodo_inferior_r"
-1 19 "gel_inferior_r"
-1 20 "gel_superior_r"
-1 21 "eletrodo_superior_r"
-
-1 29 "eletrodo_sup_cima"
-1 30 "eletrodo_inf_baixo"
-
-2 26 "eletrodo_superior"
-2 27 "eletrodo_inferior"
-2 28 "gel"
-
-
-"""
 """V.sub(0) is a view into the sub space of a space with multiple elements. It contains all degrees of freedom in the mixed space.
 V.sub(0).collapse() (in your case Q) is a function space with only the dofs in the sub-space.
 To map from a function in Q to a function in V.sub(0) , one supply the tuple, as it will then give a row by row map between the degrees of freedom.
@@ -215,17 +186,17 @@ This map (dofs_top) is used inside a Dirichlet condition that takes in a prescri
 
 """
 """Engaste"""
-Engast_0 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(14))
+Engast_0 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(22))
 Engast0 = fem.dirichletbc(fixed_displacement, Engast_0, ME.sub(0))
 
-Engast_1 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(15))
-Engast1 = fem.dirichletbc(fixed_displacement, Engast_1, ME.sub(0))
+#Engast_1 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(15))
+#Engast1 = fem.dirichletbc(fixed_displacement, Engast_1, ME.sub(0))
 
-Engast_2 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(16))
-Engast2 = fem.dirichletbc(fixed_displacement, Engast_2, ME.sub(0))
+#Engast_2 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(16))
+#Engast2 = fem.dirichletbc(fixed_displacement, Engast_2, ME.sub(0))
 
-Engast_3 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(17))
-Engast3 = fem.dirichletbc(fixed_displacement, Engast_3, ME.sub(0))
+#Engast_3 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(17))
+#Engast3 = fem.dirichletbc(fixed_displacement, Engast_3, ME.sub(0))
 
 """Estiramento : Deve-se alterar para obter os valores ideais de estiramento"""
 scaleX = 1.0e4  #Tem que arrumar isso, valor incorreto
@@ -247,17 +218,18 @@ disp= fem.Function(spaces[0])
 disp.interpolate(dispV.eval)
 
 
-stretch00= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(18)) 
+#stretch00= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(23)) 
+stretch00= fem.locate_dofs_topological((ME.sub(0),spaces[0]),fdim,facet_tags.find(23)) 
 bc_stretch0= fem.dirichletbc(disp, stretch00, ME.sub(0))
 
-stretch01= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(19)) 
-bc_stretch1= fem.dirichletbc(disp, stretch01, ME.sub(0))
+#stretch01= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(19)) 
+#bc_stretch1= fem.dirichletbc(disp, stretch01, ME.sub(0))
 
-stretch02= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(20)) 
-bc_stretch2= fem.dirichletbc(disp, stretch02, ME.sub(0))
+#stretch02= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(20)) 
+#bc_stretch2= fem.dirichletbc(disp, stretch02, ME.sub(0))
 
-stretch03= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(21)) 
-bc_stretch3= fem.dirichletbc(disp, stretch03, ME.sub(0))
+#stretch03= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(21)) 
+#bc_stretch3= fem.dirichletbc(disp, stretch03, ME.sub(0))
 
 
 """Aterramento"""
@@ -267,7 +239,7 @@ def ground_0(x):
 ground = fem.Function(spaces[2])
 ground.interpolate(ground_0)
 
-ground0 = fem.locate_dofs_topological((ME.sub(2), spaces[2]), fdim, facet_tags.find(30))
+ground0 = fem.locate_dofs_topological((ME.sub(2), spaces[2]), fdim, facet_tags.find(21))
 bc_ground = fem.dirichletbc(ground, ground0, ME.sub(2))
 
 
@@ -280,18 +252,22 @@ class phiRamp_function():
         self.t= 0.0
         self.temp= 1.0e3
         
+    #def phi_eval(self,x):
+     #   return np.stack((np.full(x.shape[1], min(self.temp/self.phi_norm*(self.t/self.Tramp), self.temp/self.phi_norm))))
+
     def phi_eval(self,x):
-        return np.stack((np.full(x.shape[1], min(self.temp/self.phi_norm*(self.t/self.Tramp), self.temp/self.phi_norm))))
+        return np.stack((np.full(x.shape[1], self.phi_norm*(self.t/self.Tramp))))
+
 
 phiRamp_func= phiRamp_function()
 phiRamp_func.t= 0 
 phiRamp= fem.Function(spaces[2])
 phiRamp.interpolate(phiRamp_func.phi_eval)
 
-phiRamp_0= fem.locate_dofs_topological((ME.sub(2),spaces[2]),fdim,facet_tags.find(29))
+phiRamp_0= fem.locate_dofs_topological((ME.sub(2),spaces[2]),fdim,facet_tags.find(20))
 bc_phiRamp = fem.dirichletbc(phiRamp,phiRamp_0,ME.sub(2))
 
-bc=[Engast0,Engast1,Engast2,Engast3, bc_stretch0,bc_stretch1,bc_stretch2,bc_stretch3, bc_ground,bc_phiRamp  ]
+bc=[Engast0, bc_stretch0, bc_ground,bc_phiRamp ]
 
 
 
@@ -420,7 +396,7 @@ with XDMFFile(MPI.COMM_WORLD, "resultados/An.xdmf", "w") as pfile_xdmf:
         pfile_xdmf.write_mesh(domain)
         pfile_xdmf.write_meshtags(facet_tags)
         pfile_xdmf.write_meshtags(cell_tags)
-       # pfile_xdmf.write_function(disp)  
+        pfile_xdmf.write_function(disp)  
 
 
 
@@ -438,8 +414,9 @@ while (round(t,2) <= round(T2_tot,2)):
     dispV.t = t - (alpha*dt) - 30.0e6 
     t += dt
     ii = ii + 1
-    ufile_xdmf.write_function(phiRamp,t)
-    pfile_xdmf.write_function(disp,t) 
-    print(dispV.eval)
-    
+    ufile_xdmf.write_function(w_old.sub(0),t)
+    pfile_xdmf.write_function(phiRamp,t) 
+    print(phiRamp_func.phi_eval)
+  
+print("finish")
     

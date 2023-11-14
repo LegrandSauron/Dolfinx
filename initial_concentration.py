@@ -9,7 +9,7 @@ import ufl
 from dolfinx.io import gmshio
 from petsc4py import PETSc
 
-domain, cell_tags, facet_tags = gmshio.read_from_msh("capacitormalha.msh", MPI.COMM_WORLD,0, gdim=2)
+domain, cell_tags, facet_tags = gmshio.read_from_msh("capacitor_versao6.msh", MPI.COMM_WORLD,0, gdim=2)
 
 """Function Space"""
 # Define function space, scalar
@@ -34,25 +34,15 @@ for i in range(num_subs):
 
 """Aplicando as propriedades dos materiais"""
 """
-1 14 "eletrodo_superior_l"
-1 15 "gel_superior_l"
-1 16 "gel_inferior_l"
-1 17 "eletrodo_inferior_l"
+1 20 "Voltagem"
+1 21 "Aterramento"
+1 22 "Engaste_esquerda"
+1 23 "Engaste_direita"
+2 24 "Hidrogel_superior"
+2 25 "Hidrogel_inferior"
+2 26 "elastomero"
+2 27 "dominio"
 
-1 18 "eletrodo_inferior_r"
-1 19 "gel_inferior_r"
-1 20 "gel_superior_r"
-1 21 "eletrodo_superior_r"
-
-1 29 "eletrodo_sup_cima"
-1 30 "eletrodo_inf_baixo"
-
-2 26 "eletrodo_superior"
-2 27 "eletrodo_inferior"
-2 28 "gel"
-
-1 29 "voltagem"
-1 30 "aterramento"
 """
 
 
@@ -73,16 +63,16 @@ def mat_features(function_descontinuo, material, constanste):
 """ Implementação das propriedades em cada regiao"""
 Q = fem.FunctionSpace(domain, D0)
 
-hidrogel_sup = tag(26)
-hidrogel_inf = tag(27)
-elastomero = tag(28)
+hidrogel_sup = tag(24)
+hidrogel_inf = tag(25)
+elastomero = tag(26)
 
 # A ordem de entrada das propriedades na lista deve ser equivalente ao espaço no qual o material ocupa dentro do dominio
 material_ = [elastomero, hidrogel_inf, hidrogel_sup]
 Gshear = mat_features(Q, material_, [0.0034e-6, 0.03e-6, 0.2e-6])
 Kbulk = mat_features(Q, material_, [2000*0.034e-6,2000*0.003e-6, 2000*0.003e-6])
 #intInd = mat_features(Q, material_, [1, 0, 0])
-matInd = mat_features(Q, material_, [0, 1, 1])
+matInd = mat_features(Q, material_, [0.0, 1, 1])
 Gshear0 = 100.0e-6  # uso na formução fraca e no cconstrutor
 Im_gent = mat_features(Q, material_, [90, 300.0, 300.0])
 
@@ -188,23 +178,14 @@ fixed_displacement = fem.Function(spaces[0])
 fixed_displacement.interpolate(fixed_displacement_expression)
 
 """
-1 14 "eletrodo_superior_l"
-1 15 "gel_superior_l"
-1 16 "gel_inferior_l"
-1 17 "eletrodo_inferior_l"
-
-1 18 "eletrodo_inferior_r"
-1 19 "gel_inferior_r"
-1 20 "gel_superior_r"
-1 21 "eletrodo_superior_r"
-
-1 29 "eletrodo_sup_cima"
-1 30 "eletrodo_inf_baixo"
-
-2 26 "eletrodo_superior"
-2 27 "eletrodo_inferior"
-2 28 "gel"
-
+1 20 "Voltagem"
+1 21 "Aterramento"
+1 22 "Engaste_esquerda"
+1 23 "Engaste_direita"
+2 24 "Hidrogel_superior"
+2 25 "Hidrogel_inferior"
+2 26 "elastomero"
+2 27 "dominio"
 
 """
 """V.sub(0) is a view into the sub space of a space with multiple elements. It contains all degrees of freedom in the mixed space.
@@ -215,17 +196,8 @@ This map (dofs_top) is used inside a Dirichlet condition that takes in a prescri
 
 """
 """Engaste"""
-Engast_0 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(14))
+Engast_0 = fem.locate_dofs_topological((ME.sub(0).sub(0), spaces[0]), fdim, facet_tags.find(22))
 Engast0 = fem.dirichletbc(fixed_displacement, Engast_0, ME.sub(0))
-
-Engast_1 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(15))
-Engast1 = fem.dirichletbc(fixed_displacement, Engast_1, ME.sub(0))
-
-Engast_2 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(16))
-Engast2 = fem.dirichletbc(fixed_displacement, Engast_2, ME.sub(0))
-
-Engast_3 = fem.locate_dofs_topological((ME.sub(0), spaces[0]), fdim, facet_tags.find(17))
-Engast3 = fem.dirichletbc(fixed_displacement, Engast_3, ME.sub(0))
 
 """Estiramento : Deve-se alterar para obter os valores ideais de estiramento"""
 scaleX = 1.0e4  #Tem que arrumar isso, valor incorreto
@@ -247,17 +219,8 @@ disp= fem.Function(spaces[0])
 disp.interpolate(dispV.eval)
 
 
-stretch00= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(18)) 
+stretch00= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(23)) 
 bc_stretch0= fem.dirichletbc(disp, stretch00, ME.sub(0))
-
-stretch01= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(19)) 
-bc_stretch1= fem.dirichletbc(disp, stretch01, ME.sub(0))
-
-stretch02= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(20)) 
-bc_stretch2= fem.dirichletbc(disp, stretch02, ME.sub(0))
-
-stretch03= fem.locate_dofs_topological((ME.sub(0).sub(0),spaces[0]),fdim,facet_tags.find(21)) 
-bc_stretch3= fem.dirichletbc(disp, stretch03, ME.sub(0))
 
 
 """Aterramento"""
@@ -267,7 +230,7 @@ def ground_0(x):
 ground = fem.Function(spaces[2])
 ground.interpolate(ground_0)
 
-ground0 = fem.locate_dofs_topological((ME.sub(2), spaces[2]), fdim, facet_tags.find(30))
+ground0 = fem.locate_dofs_topological((ME.sub(2), spaces[2]), fdim, facet_tags.find(21))
 bc_ground = fem.dirichletbc(ground, ground0, ME.sub(2))
 
 
@@ -288,11 +251,11 @@ phiRamp_func.t= 0
 phiRamp= fem.Function(spaces[2])
 phiRamp.interpolate(phiRamp_func.phi_eval)
 
-phiRamp_0= fem.locate_dofs_topological((ME.sub(2),spaces[2]),fdim,facet_tags.find(29))
+phiRamp_0= fem.locate_dofs_topological((ME.sub(2),spaces[2]),fdim,facet_tags.find(20))
 bc_phiRamp = fem.dirichletbc(phiRamp,phiRamp_0,ME.sub(2))
 
-bc=[Engast0,Engast1,Engast2,Engast3, bc_stretch0,bc_stretch1,bc_stretch2,bc_stretch3, bc_ground,bc_phiRamp  ]
-
+bc=[Engast0,bc_stretch0, bc_ground,bc_phiRamp  ]
+bc=[ bc_ground,bc_phiRamp  ]
 
 
 '''''''''''''''''''''
@@ -435,10 +398,10 @@ a = ufl.derivative(L, w, dw)
 
 
 
-problem = fem.petsc.NonlinearProblem(L, w, bcs= bc,J=a)
+problem = fem.petsc.NonlinearProblem(L, w,J=a)
 
 solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
-
+log.set_log_level(log.LogLevel.INFO)
 solver.atol = 1e-7
 solver.rtol = 1e-7
 solver.convergence_criterion = "incremental"
@@ -451,7 +414,7 @@ opts[f"{option_prefix}pc_type"] = "lu"
 opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
 ksp.setFromOptions()
     
-
+print("Solver")
 while (round(t,2) <= round(T2_tot,2)):
     
     # Output storage, also outputs intial state at t=0
@@ -465,7 +428,9 @@ while (round(t,2) <= round(T2_tot,2)):
     # Solve the problem
     iter, converged = solver.solve(w)
     
+    
      # increment time, counters
     t += dt
+    print(t)
   
    
